@@ -1,3 +1,13 @@
-# Fusion Finance
+# Sample Hardhat Project
 
-A decentralized lending and borrowing protocol for users to lend and borrow USDC. A completely trustless environment for both lenders and borrowers, built on top of Ethereum and Ethereum L2 solutions. Lenders supply the protocol with USDC and in return earn interest in a form of $FUSN tokens, protocol’s governance token. Thanks to lenders, our protocol will have liquidity to supply the borrowers with USDC. In order for borrowers to borrow they will have to collateralize ETH, our protocol works in an over-collateralized model, meaning borrower’s ETH collateral amount > USDC amount they can borrow. The borrowers pay interest to the protocol in order to maintain it, the interest will be deducted from ETH collateral when the borrower repays the full debt. In case of liquidation, meaning when the borrower's ETH collateral amount < USDC borrowed + liquidation rate, our protocol keeps the borrower's ETH collateral and rewards the liquidator.
+This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+
+Try running some of the following tasks:
+
+```shell
+npx hardhat help
+npx hardhat test
+GAS_REPORT=true npx hardhat test
+npx hardhat node
+npx hardhat run scripts/deploy.js
+```
