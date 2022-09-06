@@ -88,4 +88,23 @@ contract FusionCore {
         emit Withdraw(msg.sender, withdrawAmount);
 
     }
+    
+    ///@notice claims all yield earned by lender.
+    function claimYield() public {
+        uint yield = calculateYieldTotal(msg.sender);
+
+        require(yield > 0 || fusionBalance[msg.sender] > 0, "No, $FUSN tokens earned!");
+
+        if(fusionBalance[msg.sender] != 0) {
+            uint oldYield = fusionBalance[msg.sender];
+            fusionBalance[msg.sender] = 0;
+            yield += oldYield;
+        }
+
+        startTime[msg.sender] = block.timestamp;
+        fusionToken.mint(msg.sender, yield);
+
+        emit ClaimYield(msg.sender, yield);
+
+    }
 }
