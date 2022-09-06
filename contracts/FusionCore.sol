@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./FusionToken.sol";
 
 contract FusionCore {
@@ -10,12 +11,21 @@ contract FusionCore {
     event Lend(address indexed sender, uint amount);
     event Withdraw(address indexed sender, uint amount);
     event ClaimYield(address indexed sender, uint amount);
+    event Collateralize(address indexed sender, uint amount);
+    event WithdrawCollateral(address indexed sender, uint amount);
 
     ///@notice mappings needed to keep track of lending
     mapping(address => uint) public lendingBalance;
     mapping(address => uint) public fusionBalance;
     mapping(address => uint) public startTime;
     mapping(address => bool) public isStaking;
+
+    ///@notice mappings needed to keep track of collateral
+    mapping(address => uint) public collateralBalance;
+    mapping(address => uint) public borrowLimit;
+
+    ///@notice declaring chainlink's price aggregator.
+    AggregatorV3Interface internal priceFeed;
 
     ///@notice declaring token variables.
     IERC20 public usdcToken;
@@ -24,9 +34,10 @@ contract FusionCore {
     ///@notice initiating tokens
     ///@param _usdcAddress address of USDC token
     ///@param _fusionAddress address of $FUSN token
-    constructor(IERC20 _usdcAddress, FusionToken _fusionAddress) {
+    constructor(IERC20 _usdcAddress, FusionToken _fusionAddress, address _priceAggregator) {
         usdcToken = _usdcAddress;
         fusionToken = _fusionAddress;
+        priceFeed = AggregatorV3Interface(_priceAggregator);
     } 
 
     ///@notice calculates amount of time the lender has been lending since the last update.
@@ -44,6 +55,14 @@ contract FusionCore {
         uint timeStaked = calculateYieldTime(_lender) * 10**18;
         uint rate = timeStaked / 31536000; 
         yield = (lendingBalance[_lender] * rate) / 10**18;
+    }
+
+    ///@notice calculates the borrow limit depending on the price of ETH and borrow limit rate.
+    ///@return limit current borrow limit for user
+    function calculateBorrowLimit() public view returns(uint limit) {
+        (,int price,,,) = priceFeed.latestRoundData();
+        uint ethPrice = uint(price) / 10**8;
+        limit = (((uint(ethPrice) * collateralBalance[msg.sender]) / 100) * 70) / 10**18;
     }
 
     ///@notice lends usdc.
@@ -86,7 +105,6 @@ contract FusionCore {
         }
 
         emit Withdraw(msg.sender, withdrawAmount);
-
     }
     
     ///@notice claims all yield earned by lender.
@@ -105,6 +123,29 @@ contract FusionCore {
         fusionToken.mint(msg.sender, yield);
 
         emit ClaimYield(msg.sender, yield);
+    }
 
+    ///@notice collateralizes user's ETH and sets borrow limit
+    function collateralize() public payable {
+        require(msg.value > 0, "Can't collaterlize ETH amount: 0!");
+
+        collateralBalance[msg.sender] += msg.value;
+        borrowLimit[msg.sender] = calculateBorrowLimit();
+
+        emit Collateralize(msg.sender, msg.value);
+    } 
+
+    ///@notice withdraw user's collateral ETH and recalculates the borrow limit
+    ///@param _amount amount of ETH the user wants to withdraw
+    function withdrawCollateral(uint _amount) public {
+        require(collateralBalance[msg.sender] >= _amount, "Not enough collateral to withdraw!");
+
+        collateralBalance[msg.sender] -= _amount;
+        borrowLimit[msg.sender] = calculateBorrowLimit();
+
+        (bool success, ) = msg.sender.call{value: _amount}("");
+        require(success, "Transaction Failed!");
+
+        emit WithdrawCollateral(msg.sender, _amount);
     }
 }
