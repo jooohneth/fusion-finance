@@ -45,4 +45,47 @@ contract FusionCore {
         uint rate = timeStaked / 31536000; 
         yield = (lendingBalance[_lender] * rate) / 10**18;
     }
+
+    ///@notice lends usdc.
+    ///@param _amount amount of tokens to lend
+    function lend(uint _amount) public {
+        require(_amount > 0, "Canno lend amount: 0!");
+        require(usdcToken.balanceOf(msg.sender) >= _amount, "Insufficient balance!");
+
+        if(isStaking[msg.sender]) {
+            uint yield = calculateYieldTotal(msg.sender);
+            fusionBalance[msg.sender] += yield; 
+        }
+
+        lendingBalance[msg.sender] += _amount;
+        startTime[msg.sender] = block.timestamp;
+        isStaking[msg.sender] = true;
+
+        usdcToken.transferFrom(msg.sender, address(this), _amount);
+
+        emit Lend(msg.sender, _amount);
+    }
+
+    ///@notice withdraw usdc.
+    ///@param _amount amount of tokens to withdraw
+    function withdrawLend(uint _amount) public {
+        require(isStaking[msg.sender], "Can't withdraw before lending!");
+        require(lendingBalance[msg.sender] >= _amount, "Insufficient lending balance!");
+
+        uint yield = calculateYieldTotal(msg.sender);
+        startTime[msg.sender] = block.timestamp;
+        uint withdrawAmount = _amount;
+        _amount = 0;
+        lendingBalance[msg.sender] -= withdrawAmount;
+
+        usdcToken.transfer(msg.sender, withdrawAmount);
+        fusionBalance[msg.sender] += yield;
+
+        if(lendingBalance[msg.sender] == 0){
+            isStaking[msg.sender] = false;
+        }
+
+        emit Withdraw(msg.sender, withdrawAmount);
+
+    }
 }
