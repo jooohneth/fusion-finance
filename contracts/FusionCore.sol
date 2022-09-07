@@ -26,18 +26,19 @@ contract FusionCore {
 
     ///@notice declaring chainlink's price aggregator.
     AggregatorV3Interface internal priceFeed;
+    address public constant baseAsset = 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e;
 
     ///@notice declaring token variables.
-    IERC20 public usdcToken;
-    FusionToken public fusionToken;
+    IERC20 public immutable usdcToken;
+    FusionToken public immutable fusionToken;
 
     ///@notice initiating tokens
     ///@param _usdcAddress address of USDC token
     ///@param _fusionAddress address of $FUSN token
-    constructor(IERC20 _usdcAddress, FusionToken _fusionAddress, address _priceAggregator) {
+    constructor(IERC20 _usdcAddress, FusionToken _fusionAddress) {
         usdcToken = _usdcAddress;
         fusionToken = _fusionAddress;
-        priceFeed = AggregatorV3Interface(_priceAggregator);
+        priceFeed = AggregatorV3Interface(baseAsset);
     } 
 
     ///@notice calculates amount of time the lender has been lending since the last update.
