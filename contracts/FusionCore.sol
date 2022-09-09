@@ -67,7 +67,7 @@ contract FusionCore {
     function calculateBorrowLimit(address _lender) public view returns(uint limit) {
         (,int price,,,) = priceFeed.latestRoundData();
         uint ethPrice = uint(price) / 10**8;
-        limit = (((ethPrice * collateralBalance[_lender]) / 100) * 70) / 10**18;
+        limit = ((((ethPrice * collateralBalance[_lender]) / 100) * 70) / 10**18) - borrowBalance[_lender];
     }
 
     ///@notice lends usdc.
@@ -135,12 +135,7 @@ contract FusionCore {
         require(msg.value > 0, "Can't collaterlize ETH amount: 0!");
 
         collateralBalance[msg.sender] += msg.value;
-
-        if(isBorrowing[msg.sender]){
-            borrowLimit[msg.sender] = calculateBorrowLimit(msg.sender) - borrowBalance[msg.sender];
-        } else {
-            borrowLimit[msg.sender] = calculateBorrowLimit(msg.sender);
-        }
+        borrowLimit[msg.sender] = calculateBorrowLimit(msg.sender);
 
         emit Collateralize(msg.sender, msg.value);
     } 
