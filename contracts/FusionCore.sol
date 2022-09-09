@@ -25,7 +25,6 @@ contract FusionCore {
     ///@notice mappings needed to keep track of collateral and borrowing
     mapping(address => uint) public collateralBalance;
     mapping(address => uint) public borrowBalance;
-    mapping(address => uint) public borrowLimit;
     mapping(address => bool) public isBorrowing;
 
     ///@notice declaring chainlink's price aggregator.
@@ -135,7 +134,6 @@ contract FusionCore {
         require(msg.value > 0, "Can't collaterlize ETH amount: 0!");
 
         collateralBalance[msg.sender] += msg.value;
-        borrowLimit[msg.sender] = calculateBorrowLimit(msg.sender);
 
         emit Collateralize(msg.sender, msg.value);
     } 
@@ -147,7 +145,6 @@ contract FusionCore {
         require(!isBorrowing[msg.sender], "Can't withdraw collateral while borrowing!");
 
         collateralBalance[msg.sender] -= _amount;
-        borrowLimit[msg.sender] = calculateBorrowLimit(msg.sender);
 
         (bool success, ) = msg.sender.call{value: _amount}("");
         require(success, "Transaction Failed!");
@@ -159,11 +156,10 @@ contract FusionCore {
     ///@param _amount amount of usdc to borrow
     function borrow(uint _amount) public {
         require(collateralBalance[msg.sender] > 0, "No ETH collateralized!");
-        require(borrowLimit[msg.sender] >= _amount, "Borrow amount exceeds borrow limit!");
+        require(calculateBorrowLimit(msg.sender) >= _amount, "Borrow amount exceeds borrow limit!");
 
         isBorrowing[msg.sender] = true;
         borrowBalance[msg.sender] += _amount;
-        borrowLimit[msg.sender] -= _amount;
 
         require(usdcToken.transfer(msg.sender, _amount), "Transaction failed!");
 
@@ -181,7 +177,6 @@ contract FusionCore {
             isBorrowing[msg.sender] = false;
         }
 
-        borrowLimit[msg.sender] += _amount;
         borrowBalance[msg.sender] -= _amount;
 
         require(usdcToken.transferFrom(msg.sender, address(this), _amount), "Transaction Failed!");
