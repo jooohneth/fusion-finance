@@ -44,6 +44,13 @@ contract FusionCore {
         priceFeed = AggregatorV3Interface(baseAsset);
     } 
 
+    ///@notice Function to get latest price of ETH in USD
+    ///@return ethPrice price of ETH in USD
+    function getEthPrice() public view returns(uint ethPrice){
+        (,int price,,,) = priceFeed.latestRoundData();
+        ethPrice = uint(price) / 10**8;
+    }
+
     ///@notice calculates amount of time the lender has been lending since the last update.
     ///@param _lender address of lender
     ///@return lendingTime amount of time staked by lender
@@ -64,8 +71,7 @@ contract FusionCore {
     ///@notice calculates the borrow limit depending on the price of ETH and borrow limit rate.
     ///@return limit current borrow limit for user
     function calculateBorrowLimit(address _borrower) public view returns(uint limit) {
-        (,int price,,,) = priceFeed.latestRoundData();
-        uint ethPrice = uint(price) / 10**8;
+        uint ethPrice = getEthPrice();
         limit = ((((ethPrice * collateralBalance[_borrower]) / 100) * 70) / 10**18) - borrowBalance[_borrower];
     }
 
