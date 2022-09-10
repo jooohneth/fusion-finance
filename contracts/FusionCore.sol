@@ -7,7 +7,7 @@ import "./FusionToken.sol";
 
 contract FusionCore {
 
-    ///@notice staking events emitted after each action.
+    ///@notice events emitted after each action.
     event Lend(address indexed lender, uint amount);
     event WithdrawLend(address indexed lender, uint amount);
     event ClaimYield(address indexed lender, uint amount);
@@ -20,7 +20,7 @@ contract FusionCore {
     mapping(address => uint) public lendingBalance;
     mapping(address => uint) public fusionBalance;
     mapping(address => uint) public startTime;
-    mapping(address => bool) public isStaking;
+    mapping(address => bool) public isLending;
 
     ///@notice mappings needed to keep track of collateral and borrowing
     mapping(address => uint) public collateralBalance;
@@ -46,9 +46,9 @@ contract FusionCore {
 
     ///@notice calculates amount of time the lender has been lending since the last update.
     ///@param _lender address of lender
-    ///@return stakingTime amount of time staked by lender
-    function calculateYieldTime(address _lender) public view returns(uint stakingTime) {
-        stakingTime = block.timestamp - startTime[_lender];
+    ///@return lendingTime amount of time staked by lender
+    function calculateYieldTime(address _lender) public view returns(uint lendingTime) {
+        lendingTime = block.timestamp - startTime[_lender];
     }
 
     ///@notice calculates amount of $FUSN tokens the lender has earned since the last update.
@@ -63,10 +63,10 @@ contract FusionCore {
 
     ///@notice calculates the borrow limit depending on the price of ETH and borrow limit rate.
     ///@return limit current borrow limit for user
-    function calculateBorrowLimit(address _lender) public view returns(uint limit) {
+    function calculateBorrowLimit(address _borrower) public view returns(uint limit) {
         (,int price,,,) = priceFeed.latestRoundData();
         uint ethPrice = uint(price) / 10**8;
-        limit = ((((ethPrice * collateralBalance[_lender]) / 100) * 70) / 10**18) - borrowBalance[_lender];
+        limit = ((((ethPrice * collateralBalance[_borrower]) / 100) * 70) / 10**18) - borrowBalance[_borrower];
     }
 
     ///@notice lends usdc.
@@ -75,14 +75,14 @@ contract FusionCore {
         require(_amount > 0, "Canno lend amount: 0!");
         require(usdcToken.balanceOf(msg.sender) >= _amount, "Insufficient balance!");
 
-        if(isStaking[msg.sender]) {
+        if(isLending[msg.sender]) {
             uint yield = calculateYieldTotal(msg.sender);
             fusionBalance[msg.sender] += yield; 
         }
 
         lendingBalance[msg.sender] += _amount;
         startTime[msg.sender] = block.timestamp;
-        isStaking[msg.sender] = true;
+        isLending[msg.sender] = true;
 
         require(usdcToken.transferFrom(msg.sender, address(this), _amount), "Transaction failed!");
 
@@ -92,7 +92,7 @@ contract FusionCore {
     ///@notice withdraw usdc.
     ///@param _amount amount of tokens to withdraw
     function withdrawLend(uint _amount) public {
-        require(isStaking[msg.sender], "Can't withdraw before lending!");
+        require(isLending[msg.sender], "Can't withdraw before lending!");
         require(lendingBalance[msg.sender] >= _amount, "Insufficient lending balance!");
 
         uint yield = calculateYieldTotal(msg.sender);
@@ -105,7 +105,7 @@ contract FusionCore {
         fusionBalance[msg.sender] += yield;
 
         if(lendingBalance[msg.sender] == 0){
-            isStaking[msg.sender] = false;
+            isLending[msg.sender] = false;
         }
 
         emit WithdrawLend(msg.sender, withdrawAmount);
