@@ -154,7 +154,10 @@ contract FusionCore {
 
     ///@notice borrows usdc
     ///@param _amount amount of usdc to borrow
+    ///@dev deducting 0.3% from msg.sender's ETH collateral as protocol's fees
     function borrow(uint _amount) public {
+        collateralBalance[msg.sender] -= (collateralBalance[msg.sender] / 1000) * 3;
+
         require(collateralBalance[msg.sender] > 0, "No ETH collateralized!");
         require(calculateBorrowLimit(msg.sender) >= _amount, "Borrow amount exceeds borrow limit!");
 
