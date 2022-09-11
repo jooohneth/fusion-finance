@@ -15,6 +15,7 @@ contract FusionCore {
     event WithdrawCollateral(address indexed borrower, uint amount);
     event Borrow(address indexed borrower, uint amount);
     event Repay(address indexed borrower, uint amount);
+    event Liquidate(address liquidator, uint reward, address indexed borrower);
 
     ///@notice mappings needed to keep track of lending
     mapping(address => uint) public lendingBalance;
@@ -43,6 +44,13 @@ contract FusionCore {
         fusionToken = _fusionAddress;
         priceFeed = AggregatorV3Interface(baseAsset);
     } 
+
+    ///@notice checks if the borrow position has passed the liquidation point
+    modifier passedLiquidation(address _borrower) {
+        uint ethPrice = getEthPrice();
+        require((ethPrice * collateralBalance[_borrower]) / 10**18 <= calculateLiquidationPoint(_borrower));
+        _;
+    }
 
     ///@notice Function to get latest price of ETH in USD
     ///@return ethPrice price of ETH in USD
@@ -75,10 +83,14 @@ contract FusionCore {
         limit = ((((ethPrice * collateralBalance[_borrower]) / 100) * 70) / 10**18) - borrowBalance[_borrower];
     }
 
+    function calculateLiquidationPoint(address _borrower) public view returns(uint point) {
+        point = borrowBalance[_borrower] + ((borrowBalance[_borrower] / 100) * 10);
+    }
+
     ///@notice lends usdc.
     ///@param _amount amount of tokens to lend
     function lend(uint _amount) public {
-        require(_amount > 0, "Canno lend amount: 0!");
+        require(_amount > 0, "Can't lend amount: 0!");
         require(usdcToken.balanceOf(msg.sender) >= _amount, "Insufficient balance!");
 
         if(isLending[msg.sender]) {
@@ -191,5 +203,24 @@ contract FusionCore {
         require(usdcToken.transferFrom(msg.sender, address(this), _amount), "Transaction Failed!");
 
         emit Repay(msg.sender, _amount);
+    }
+
+    ///@notice liquidates a borrow position
+    ///@param _borrower address of borrower
+    ///@dev passedLiquidation modifier checks if the borrow position has passed liquidation point
+    ///@dev liquidationReward 1.25% of borrower's ETH collateral
+    function liquidate(address _borrower) public passedLiquidation(_borrower) {
+        require(isBorrowing[_borrower], "This address is not borrowing!");
+
+        uint liquidationReward = (collateralBalance[_borrower] / 10000) * 125; 
+
+        collateralBalance[_borrower] = 0;
+        borrowBalance[_borrower] = 0;
+        isBorrowing[_borrower] = false;
+
+        (bool success, ) = msg.sender.call{value: liquidationReward}("");
+        require(success, "Transaction Failed!");
+
+        emit Liquidate(msg.sender, liquidationReward, _borrower);
     }
 }
