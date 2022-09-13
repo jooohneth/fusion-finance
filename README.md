@@ -48,3 +48,7 @@ A decentralized lending and borrowing protocol for users to lend and borrow USDC
   - Type - ERC20 token
   - Max supply - 21 million $FUSN Tokens.
   - Purpose - Mints tokens to lenders as reward.
+
+## UML Use Case Diagram
+
+![Diagram](Diagram.png)
