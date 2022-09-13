@@ -151,4 +151,82 @@ describe("Fusion Core", () => {
       ).to.be.revertedWith("Insufficient lending balance!");
     });
   });
+
+  describe("Claim Yield", async () => {
+    beforeEach(async () => {
+      let lendAmount = ethers.utils.parseEther("10");
+
+      await fusionToken.transferOwnership(fusionCore.address);
+      await mockUsdc.connect(alice).approve(fusionCore.address, lendAmount);
+      await fusionCore.connect(alice).lend(lendAmount);
+    });
+
+    it("should return time elapsed", async () => {
+      let time = 31536000;
+      let startingTime = await fusionCore.startTime(alice.address);
+      expect(Number(startingTime)).to.be.greaterThan(0);
+
+      await ethers.provider.send("evm_increaseTime", [time]);
+      await ethers.provider.send("evm_mine");
+
+      expect(await fusionCore.calculateYieldTime(alice.address)).to.eq(time);
+    });
+
+    it("should claim correct amount of tokens", async () => {
+      let time = 31536000;
+      await ethers.provider.send("evm_increaseTime", [time]);
+      await ethers.provider.send("evm_mine");
+
+      let lendDuration = await fusionCore.calculateYieldTime(alice.address);
+      let lendAmount = await fusionCore.lendingBalance(alice.address);
+      let earnRate = lendDuration / time;
+      let balance = ethers.utils.formatEther(
+        (lendAmount * earnRate).toString()
+      );
+      let expectedToEarn = Number.parseFloat(balance).toFixed(3);
+
+      await fusionCore.connect(alice).claimYield();
+
+      let rawEarnedAmount = await fusionToken.balanceOf(alice.address);
+      let earnedAmount = Number.parseFloat(
+        ethers.utils.formatEther(rawEarnedAmount)
+      )
+        .toFixed(3)
+        .toString();
+
+      expect(expectedToEarn).to.eq(earnedAmount);
+    });
+
+    it("should save yield earned after lending again", async () => {
+      let time = 31536000;
+      let lendAmount = ethers.utils.parseEther("5");
+
+      await mockUsdc.connect(alice).approve(fusionCore.address, lendAmount);
+
+      await ethers.provider.send("evm_increaseTime", [time]);
+      await ethers.provider.send("evm_mine");
+
+      await fusionCore.connect(alice).lend(lendAmount);
+
+      let rawBalance = await fusionCore.fusionBalance(alice.address);
+      let balance = Number(ethers.utils.formatEther(rawBalance));
+
+      expect(balance).to.be.closeTo(10, 0.001);
+    });
+
+    it("should save yield earned after withdrawing", async () => {
+      let time = 31536000;
+      let withdrawAmount = ethers.utils.parseEther("5");
+
+      await ethers.provider.send("evm_increaseTime", [time]);
+      await ethers.provider.send("evm_mine");
+
+      await fusionCore.connect(alice).withdrawLend(withdrawAmount);
+
+      let rawBalance = await fusionCore.fusionBalance(alice.address);
+      let balance = Number(ethers.utils.formatEther(rawBalance));
+
+      expect(balance).to.be.closeTo(10, 0.001);
+    });
+  });
 });
