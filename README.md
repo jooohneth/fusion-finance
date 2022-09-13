@@ -51,4 +51,4 @@ A decentralized lending and borrowing protocol for users to lend and borrow USDC
 
 ## UML Use Case Diagram
 
-![Diagram](Diagram.png)
+![Diagram](Diagram.jpeg)
