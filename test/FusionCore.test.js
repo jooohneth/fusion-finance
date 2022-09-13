@@ -9,7 +9,6 @@ describe("Fusion Core", () => {
   let fusionCore;
   let fusionToken;
   let mockUsdc;
-  let result;
 
   const usdcAmount = ethers.utils.parseEther("25000");
 
@@ -53,7 +52,6 @@ describe("Fusion Core", () => {
 
       expect(await fusionCore.isLending(alice.address)).to.eq(true);
       expect(await fusionCore.lendingBalance(alice.address)).to.eq(lendAmount);
-      expect(await fusionCore.startTime(alice.address)).to.not.eq(0);
     });
 
     it("should lend USDC multiple times", async () => {
@@ -70,7 +68,7 @@ describe("Fusion Core", () => {
       );
     });
 
-    it("shoud lend USDC for multiple users", async () => {
+    it("should lend USDC for multiple users", async () => {
       let lendAmount = ethers.utils.parseEther("100");
 
       await mockUsdc.connect(alice).approve(fusionCore.address, lendAmount);
@@ -121,8 +119,8 @@ describe("Fusion Core", () => {
 
       await fusionCore.connect(bob).withdrawLend(withdrawAmount);
 
-      result = await fusionCore.lendingBalance(bob.address);
-      expect(Number(result)).to.eq(0);
+      let balance = await fusionCore.lendingBalance(bob.address);
+      expect(Number(balance)).to.eq(0);
 
       expect(await fusionCore.isLending(bob.address)).to.eq(false);
     });
@@ -134,14 +132,14 @@ describe("Fusion Core", () => {
 
       await fusionCore.connect(bob).withdrawLend(firstAmount);
 
-      result = await fusionCore.lendingBalance(bob.address);
-      expect(Number(result)).to.eq(lendAmount - firstAmount);
+      let balance = await fusionCore.lendingBalance(bob.address);
+      expect(Number(balance)).to.eq(lendAmount - firstAmount);
       expect(await fusionCore.isLending(bob.address)).to.eq(true);
 
       await fusionCore.connect(bob).withdrawLend(secondAmount);
 
-      result = await fusionCore.lendingBalance(bob.address);
-      expect(Number(result)).to.eq(0);
+      balance = await fusionCore.lendingBalance(bob.address);
+      expect(Number(balance)).to.eq(0);
       expect(await fusionCore.isLending(bob.address)).to.eq(false);
     });
 
