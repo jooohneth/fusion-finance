@@ -1,8 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { time } = require("@openzeppelin/test-helpers");
 
+//Tests for FusionCore.sol contract
 describe("Fusion Core", () => {
+  //Setting constant variables
   let owner;
   let alice;
   let bob;
@@ -12,6 +13,7 @@ describe("Fusion Core", () => {
 
   const usdcAmount = ethers.utils.parseEther("25000");
 
+  //Runs before individual tests. Deploying contracts, minting usdc.
   beforeEach(async () => {
     const FusionCore = await ethers.getContractFactory("FusionCore");
     const FusionToken = await ethers.getContractFactory("FusionToken");
@@ -31,6 +33,7 @@ describe("Fusion Core", () => {
     fusionCore = await FusionCore.deploy(mockUsdc.address, fusionToken.address);
   });
 
+  //Deployment test
   describe("Initialize", async () => {
     it("should deploy successfully", async () => {
       expect(await mockUsdc).to.be.ok;
@@ -39,6 +42,7 @@ describe("Fusion Core", () => {
     });
   });
 
+  //Lending funcionality tests
   describe("Lend", async () => {
     it("should lend USDC", async () => {
       let lendAmount = ethers.utils.parseEther("100");
@@ -106,6 +110,7 @@ describe("Fusion Core", () => {
     });
   });
 
+  //Withdraw USDC functionality tests
   describe("Withdraw Lend", async () => {
     beforeEach(async () => {
       let lendAmount = ethers.utils.parseEther("100");
@@ -152,6 +157,7 @@ describe("Fusion Core", () => {
     });
   });
 
+  //Claim yield ($FUSN) functionality and arithmetics tests
   describe("Claim Yield", async () => {
     beforeEach(async () => {
       let lendAmount = ethers.utils.parseEther("10");
