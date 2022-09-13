@@ -34,9 +34,123 @@ describe("Fusion Core", () => {
 
   describe("Initialize", async () => {
     it("should deploy successfully", async () => {
-      expect(mockUsdc).to.be.ok;
-      expect(fusionToken).to.be.ok;
-      expect(fusionCore).to.be.ok;
+      expect(await mockUsdc).to.be.ok;
+      expect(await fusionToken).to.be.ok;
+      expect(await fusionCore).to.be.ok;
+    });
+  });
+
+  describe("Lend", async () => {
+    it("should lend USDC", async () => {
+      let lendAmount = ethers.utils.parseEther("100");
+
+      await mockUsdc.connect(alice).approve(fusionCore.address, lendAmount);
+
+      expect(await fusionCore.isLending(alice.address)).to.eq(false);
+
+      expect(await fusionCore.connect(alice).lend(lendAmount)).to.be.ok;
+      expect(await mockUsdc.balanceOf(fusionCore.address)).to.eq(lendAmount);
+
+      expect(await fusionCore.isLending(alice.address)).to.eq(true);
+      expect(await fusionCore.lendingBalance(alice.address)).to.eq(lendAmount);
+      expect(await fusionCore.startTime(alice.address)).to.not.eq(0);
+    });
+
+    it("should lend USDC multiple times", async () => {
+      let lendAmount = ethers.utils.parseEther("100");
+
+      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+      expect(await fusionCore.connect(bob).lend(lendAmount)).to.be.ok;
+
+      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+      expect(await fusionCore.connect(bob).lend(lendAmount)).to.be.ok;
+
+      expect(await fusionCore.lendingBalance(bob.address)).to.eq(
+        ethers.utils.parseEther("200")
+      );
+    });
+
+    it("shoud lend USDC for multiple users", async () => {
+      let lendAmount = ethers.utils.parseEther("100");
+
+      await mockUsdc.connect(alice).approve(fusionCore.address, lendAmount);
+      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+
+      expect(await fusionCore.connect(alice).lend(lendAmount)).to.be.ok;
+      expect(await fusionCore.connect(bob).lend(lendAmount)).to.be.ok;
+
+      expect(await fusionCore.lendingBalance(alice.address)).to.eq(lendAmount);
+      expect(await fusionCore.lendingBalance(bob.address)).to.eq(lendAmount);
+    });
+
+    it("should revert with 0 lend amount", async () => {
+      await expect(fusionCore.connect(alice).lend(0)).to.be.revertedWith(
+        "Can't lend amount: 0!"
+      );
+    });
+
+    it("should revert with insufficient funds", async () => {
+      let lendAmount = ethers.utils.parseEther("25001");
+
+      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+
+      await expect(fusionCore.connect(bob).lend(lendAmount)).to.be.revertedWith(
+        "Insufficient balance!"
+      );
+    });
+
+    it("should revert with insufficient allowance!", async () => {
+      let lendAmount = ethers.utils.parseEther("100");
+
+      await expect(
+        fusionCore.connect(alice).lend(lendAmount)
+      ).to.be.revertedWith("ERC20: insufficient allowance");
+    });
+  });
+
+  describe("Withdraw Lend", async () => {
+    beforeEach(async () => {
+      let lendAmount = ethers.utils.parseEther("100");
+
+      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+      await fusionCore.connect(bob).lend(lendAmount);
+    });
+
+    it("should withdraw lend amount", async () => {
+      let withdrawAmount = ethers.utils.parseEther("100");
+
+      await fusionCore.connect(bob).withdrawLend(withdrawAmount);
+
+      result = await fusionCore.lendingBalance(bob.address);
+      expect(Number(result)).to.eq(0);
+
+      expect(await fusionCore.isLending(bob.address)).to.eq(false);
+    });
+
+    it("should withdraw lend amount multiple times", async () => {
+      let lendAmount = ethers.utils.parseEther("100");
+      let firstAmount = ethers.utils.parseEther("70");
+      let secondAmount = ethers.utils.parseEther("30");
+
+      await fusionCore.connect(bob).withdrawLend(firstAmount);
+
+      result = await fusionCore.lendingBalance(bob.address);
+      expect(Number(result)).to.eq(lendAmount - firstAmount);
+      expect(await fusionCore.isLending(bob.address)).to.eq(true);
+
+      await fusionCore.connect(bob).withdrawLend(secondAmount);
+
+      result = await fusionCore.lendingBalance(bob.address);
+      expect(Number(result)).to.eq(0);
+      expect(await fusionCore.isLending(bob.address)).to.eq(false);
+    });
+
+    it("should revert with insufficient lending balance", async () => {
+      let withdrawAmount = ethers.utils.parseEther("101");
+
+      await expect(
+        fusionCore.connect(bob).withdrawLend(withdrawAmount)
+      ).to.be.revertedWith("Insufficient lending balance!");
     });
   });
 });
