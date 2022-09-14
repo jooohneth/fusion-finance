@@ -12,6 +12,7 @@ describe("Fusion Core", () => {
   let mockUsdc;
 
   const usdcAmount = ethers.utils.parseEther("25000");
+  const provider = ethers.provider;
 
   //Runs before individual tests. Deploying contracts, minting usdc.
   beforeEach(async () => {
@@ -233,6 +234,97 @@ describe("Fusion Core", () => {
       let balance = Number(ethers.utils.formatEther(rawBalance));
 
       expect(balance).to.be.closeTo(10, 0.001);
+    });
+  });
+
+  //Collateralize ETH funcionality tests
+  describe("Collateralize ETH", async () => {
+    it("should colltaeralize ether", async () => {
+      let collatAmount = ethers.utils.parseEther("1");
+
+      await fusionCore.connect(bob).collateralize({ value: collatAmount });
+
+      expect(await fusionCore.collateralBalance(bob.address)).to.eq(
+        collatAmount
+      );
+      expect(await provider.getBalance(fusionCore.address)).to.eq(collatAmount);
+    });
+
+    it("should collateralize ether multiple times", async () => {
+      let collatAmount = ethers.utils.parseEther("1");
+
+      await fusionCore.connect(alice).collateralize({ value: collatAmount });
+      await fusionCore.connect(bob).collateralize({ value: collatAmount });
+      await fusionCore.connect(alice).collateralize({ value: collatAmount });
+
+      expect(await fusionCore.collateralBalance(alice.address)).to.eq(
+        ethers.utils.parseEther("2")
+      );
+      expect(await fusionCore.collateralBalance(bob.address)).to.eq(
+        collatAmount
+      );
+      expect(await provider.getBalance(fusionCore.address)).to.eq(
+        ethers.utils.parseEther("3")
+      );
+    });
+
+    it("should revert with amount 0 can't be collateralized", async () => {
+      await expect(
+        fusionCore.connect(bob).collateralize({ value: 0 })
+      ).to.be.revertedWith("Can't collaterlize ETH amount: 0!");
+    });
+  });
+
+  //Withdraw Collateral functionality tests
+  describe("Withdraw Colleteral", async () => {
+    beforeEach(async () => {
+      let collatAmount = ethers.utils.parseEther("3");
+
+      await fusionCore.connect(bob).collateralize({ value: collatAmount });
+    });
+
+    it("should withdraw collateral", async () => {
+      let withdrawAmount = ethers.utils.parseEther("1");
+      let expectedResult = ethers.utils.parseEther("2");
+      let rawBeforeBalance = await provider.getBalance(bob.address);
+      let beforeBalance = Number(ethers.utils.formatEther(rawBeforeBalance));
+
+      await fusionCore.connect(bob).withdrawCollateral(withdrawAmount);
+
+      expect(await fusionCore.collateralBalance(bob.address)).to.eq(
+        expectedResult
+      );
+      expect(await provider.getBalance(fusionCore.address)).to.eq(
+        expectedResult
+      );
+
+      let rawAfterBalance = await provider.getBalance(bob.address);
+      let afterBalance = Number(ethers.utils.formatEther(rawAfterBalance));
+
+      expect(afterBalance).to.be.closeTo(beforeBalance + 1, 0.0001);
+    });
+
+    it("should withdraw collateral multiple times", async () => {
+      let firstAmount = ethers.utils.parseEther("1");
+      let secondAmount = ethers.utils.parseEther("2");
+
+      await fusionCore.connect(bob).withdrawCollateral(firstAmount);
+
+      expect(await fusionCore.collateralBalance(bob.address)).to.eq(
+        ethers.utils.parseEther("2")
+      );
+
+      await fusionCore.connect(bob).withdrawCollateral(secondAmount);
+
+      expect(await fusionCore.collateralBalance(bob.address)).to.eq(0);
+    });
+
+    it("should revert with not enough collateral to withdraw", async () => {
+      let withdrawAmount = ethers.utils.parseEther("4");
+
+      await expect(
+        fusionCore.connect(bob).withdrawCollateral(withdrawAmount)
+      ).to.be.revertedWith("Not enough collateral to withdraw!");
     });
   });
 });
