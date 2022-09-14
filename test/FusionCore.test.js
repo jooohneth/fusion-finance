@@ -327,4 +327,10 @@ describe("Fusion Core", () => {
       ).to.be.revertedWith("Not enough collateral to withdraw!");
     });
   });
+
+  describe("Chainlink Price Feed", () => {
+    it("Should be able to successfully get price of ETH", async function () {
+      expect(await fusionCore.getEthPrice()).not.be.null;
+    });
+  });
 });
