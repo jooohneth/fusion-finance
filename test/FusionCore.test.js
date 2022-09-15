@@ -330,7 +330,164 @@ describe("Fusion Core", () => {
 
   describe("Chainlink Price Feed", () => {
     it("Should be able to successfully get price of ETH", async function () {
-      expect(await fusionCore.getEthPrice()).not.be.null;
+      let ethPrice = await fusionCore.getEthPrice();
+      expect(ethPrice).not.be.null;
+
+      //console.log(`Price of Ether: ${Number(ethPrice)}`);
+    });
+  });
+
+  describe("Borrow USDC", () => {
+    beforeEach(async () => {
+      let collatAmount = ethers.utils.parseEther("1");
+
+      await fusionCore.connect(alice).collateralize({ value: collatAmount });
+
+      await mockUsdc.mint(fusionCore.address, usdcAmount);
+    });
+
+    it("should calculate borrow limit", async () => {
+      let rawEthPrice = await fusionCore.getEthPrice();
+      let ethPrice = Number(rawEthPrice);
+      let rawCollatBalance = await fusionCore.collateralBalance(alice.address);
+      let collatBalance = Number(ethers.utils.formatEther(rawCollatBalance));
+      let expectedResult = ethPrice * collatBalance * 0.7;
+
+      let rawResult = await fusionCore.calculateBorrowLimit(alice.address);
+      let result = Number(ethers.utils.formatEther(rawResult));
+
+      //closeTo +- 1 to account for ETH price fluctuations
+      expect(result).to.closeTo(expectedResult, 1);
+    });
+
+    it("should borrow usdc", async () => {
+      let rawBorrowLimit = await fusionCore.calculateBorrowLimit(alice.address);
+      let borrowLimit = ethers.utils.formatEther(rawBorrowLimit);
+      let borrowAmount = ethers.utils.parseEther((borrowLimit / 2).toString());
+      let beforeBalance = await mockUsdc.balanceOf(alice.address);
+
+      expect(await fusionCore.connect(alice).borrow(borrowAmount)).to.be.ok;
+
+      expect(await fusionCore.isBorrowing(alice.address)).to.eq(true);
+
+      let borrowBalance = await fusionCore.borrowBalance(alice.address);
+      expect(borrowBalance).to.eq(borrowAmount);
+
+      let afterBalance = await mockUsdc.balanceOf(alice.address);
+      expect(afterBalance).to.eq(beforeBalance.add(borrowAmount));
+    });
+
+    it("should borrow multiple times", async () => {
+      let firstAmount = ethers.utils.parseEther("500");
+      let secondAmount = ethers.utils.parseEther("300");
+
+      await fusionCore.connect(alice).borrow(firstAmount);
+      expect(await fusionCore.borrowBalance(alice.address)).to.eq(firstAmount);
+
+      await fusionCore.connect(alice).borrow(secondAmount);
+      expect(await fusionCore.borrowBalance(alice.address)).to.eq(
+        firstAmount.add(secondAmount)
+      );
+    });
+
+    it("should deduct borrow fees from collateral", async () => {
+      let beforeBalance = await fusionCore.collateralBalance(alice.address);
+      let expectedResult = beforeBalance - beforeBalance * 0.003;
+
+      await fusionCore.connect(alice).borrow(1);
+
+      let rawAfterBalance = await fusionCore.collateralBalance(alice.address);
+      let afterBalance = Number(rawAfterBalance);
+
+      expect(afterBalance).to.eq(expectedResult);
+    });
+
+    it("should revert with no ETH collateralized", async () => {
+      await expect(fusionCore.connect(bob).borrow(1)).to.be.revertedWith(
+        "No ETH collateralized!"
+      );
+    });
+
+    it("should revert with borrow amount > borrow limit", async () => {
+      let borrowAmount = ethers.utils.parseEther("10000");
+
+      await expect(
+        fusionCore.connect(alice).borrow(borrowAmount)
+      ).to.be.revertedWith("Borrow amount exceeds borrow limit!");
+    });
+  });
+
+  describe("Repay USDC", async () => {
+    beforeEach(async () => {
+      let collatAmount = ethers.utils.parseEther("1");
+      let borrowAmount = ethers.utils.parseEther("700");
+
+      await mockUsdc.mint(fusionCore.address, usdcAmount);
+      await fusionCore.connect(bob).collateralize({ value: collatAmount });
+      await fusionCore.connect(bob).borrow(borrowAmount);
+      await mockUsdc.connect(bob).approve(fusionCore.address, usdcAmount);
+    });
+
+    it("should repay amount", async () => {
+      let repayAmount = ethers.utils.parseEther("500");
+      let beforeBalance = await mockUsdc.balanceOf(fusionCore.address);
+
+      expect(await fusionCore.connect(bob).repay(repayAmount)).to.be.ok;
+
+      expect(await fusionCore.isBorrowing(bob.address)).to.eq(true);
+      expect(await fusionCore.borrowBalance(bob.address)).to.eq(
+        ethers.utils.parseEther("200")
+      );
+
+      let afterBalance = await mockUsdc.balanceOf(fusionCore.address);
+      expect(afterBalance).to.eq(beforeBalance.add(repayAmount));
+    });
+
+    it("should repay multiple times", async () => {
+      let firstAmount = ethers.utils.parseEther("200");
+      let secondAmount = ethers.utils.parseEther("300");
+
+      await fusionCore.connect(bob).repay(firstAmount);
+      expect(await fusionCore.borrowBalance(bob.address)).to.eq(
+        ethers.utils.parseEther("500")
+      );
+
+      await fusionCore.connect(bob).repay(secondAmount);
+      expect(await fusionCore.borrowBalance(bob.address)).to.eq(
+        ethers.utils.parseEther("200")
+      );
+    });
+
+    it("shoud repay full amount", async () => {
+      let repayAmount = ethers.utils.parseEther("700");
+
+      await fusionCore.connect(bob).repay(repayAmount);
+
+      expect(await fusionCore.isBorrowing(bob.address)).to.eq(false);
+      expect(await fusionCore.borrowBalance(bob.address)).to.eq(0);
+    });
+
+    it("should revert with insufficient funds", async () => {
+      let balance = await mockUsdc.balanceOf(bob.address);
+      await mockUsdc.connect(bob).transfer(alice.address, balance);
+
+      await expect(fusionCore.connect(bob).repay(1)).to.be.revertedWith(
+        "Insufficient funds!"
+      );
+    });
+
+    it("should revert with can't repay 0 or more that borrowed", async () => {
+      let repayAmount = ethers.utils.parseEther("800");
+
+      await expect(
+        fusionCore.connect(bob).repay(repayAmount)
+      ).to.be.revertedWith(
+        "Can't repay amount: 0 or more than amount borrowed!"
+      );
+
+      await expect(fusionCore.connect(bob).repay(0)).to.be.revertedWith(
+        "Can't repay amount: 0 or more than amount borrowed!"
+      );
     });
   });
 });
