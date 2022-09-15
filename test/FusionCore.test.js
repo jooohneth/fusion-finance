@@ -490,4 +490,30 @@ describe("Fusion Core", () => {
       );
     });
   });
+
+  describe("Liquidate", async () => {
+    beforeEach(async () => {
+      let collatAmount = ethers.utils.parseEther("1");
+      let borrowAmount = ethers.utils.parseEther("700");
+
+      await mockUsdc.mint(fusionCore.address, usdcAmount);
+      await fusionCore.connect(alice).collateralize({ value: collatAmount });
+      await fusionCore.connect(alice).borrow(borrowAmount);
+    });
+
+    it("should return liquidation point", async () => {
+      let rawBorrowBalance = await fusionCore.borrowBalance(alice.address);
+      let borrowBalance = Number(rawBorrowBalance);
+      let expectedResult = borrowBalance + borrowBalance * 0.1;
+
+      let rawResult = await fusionCore.calculateLiquidationPoint(alice.address);
+      expect(Number(rawResult)).to.eq(expectedResult);
+    });
+
+    it("should revert with position can't be liquidated", async () => {
+      await expect(
+        fusionCore.connect(bob).liquidate(alice.address)
+      ).to.be.revertedWith("Position can't be liquidated!");
+    });
+  });
 });
