@@ -30,19 +30,19 @@ contract FusionCore {
 
     ///@notice declaring chainlink's price aggregator.
     AggregatorV3Interface internal priceFeed;
-    address public constant baseAsset = 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e;
+    address public constant baseAssetAddress = 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e;
 
     ///@notice declaring token variables.
-    IERC20 public immutable usdcToken;
+    IERC20 public immutable baseAsset;
     FusionToken public immutable fusionToken;
 
     ///@notice initiating tokens
-    ///@param _usdcAddress address of USDC token
+    ///@param _baseAssetAddress address of base asset token
     ///@param _fusionAddress address of $FUSN token
-    constructor(IERC20 _usdcAddress, FusionToken _fusionAddress) {
-        usdcToken = _usdcAddress;
+    constructor(IERC20 _baseAssetAddress, FusionToken _fusionAddress) {
+        baseAsset = _baseAssetAddress;
         fusionToken = _fusionAddress;
-        priceFeed = AggregatorV3Interface(baseAsset);
+        priceFeed = AggregatorV3Interface(baseAssetAddress);
     } 
 
     ///@notice checks if the borrow position has passed the liquidation point
@@ -80,18 +80,18 @@ contract FusionCore {
     ///@return limit current borrow limit for user
     function calculateBorrowLimit(address _borrower) public view returns(uint limit) {
         uint ethPrice = getEthPrice();
-        limit = ((((ethPrice * collateralBalance[_borrower]) / 100) * 70) / 10**18) - borrowBalance[_borrower];
+        limit = ((((ethPrice * collateralBalance[_borrower]) / 100) * 70)) - borrowBalance[_borrower];
     }
 
     function calculateLiquidationPoint(address _borrower) public view returns(uint point) {
         point = borrowBalance[_borrower] + ((borrowBalance[_borrower] / 100) * 10);
     }
 
-    ///@notice lends usdc.
+    ///@notice lends base asset.
     ///@param _amount amount of tokens to lend
     function lend(uint _amount) public {
         require(_amount > 0, "Can't lend amount: 0!");
-        require(usdcToken.balanceOf(msg.sender) >= _amount, "Insufficient balance!");
+        require(baseAsset.balanceOf(msg.sender) >= _amount, "Insufficient balance!");
 
         if(isLending[msg.sender]) {
             uint yield = calculateYieldTotal(msg.sender);
@@ -102,12 +102,12 @@ contract FusionCore {
         startTime[msg.sender] = block.timestamp;
         isLending[msg.sender] = true;
 
-        require(usdcToken.transferFrom(msg.sender, address(this), _amount), "Transaction failed!");
+        require(baseAsset.transferFrom(msg.sender, address(this), _amount), "Transaction failed!");
 
         emit Lend(msg.sender, _amount);
     }
 
-    ///@notice withdraw usdc.
+    ///@notice withdraw base asset.
     ///@param _amount amount of tokens to withdraw
     function withdrawLend(uint _amount) public {
         require(isLending[msg.sender], "Can't withdraw before lending!");
@@ -119,7 +119,7 @@ contract FusionCore {
         _amount = 0;
         lendingBalance[msg.sender] -= withdrawAmount;
 
-        require(usdcToken.transfer(msg.sender, withdrawAmount), "Transaction failed!");
+        require(baseAsset.transfer(msg.sender, withdrawAmount), "Transaction failed!");
         fusionBalance[msg.sender] += yield;
 
         if(lendingBalance[msg.sender] == 0){
@@ -170,8 +170,8 @@ contract FusionCore {
         emit WithdrawCollateral(msg.sender, _amount);
     }
 
-    ///@notice borrows usdc
-    ///@param _amount amount of usdc to borrow
+    ///@notice borrows base asset
+    ///@param _amount amount of base asset to borrow
     ///@dev deducting 0.3% from msg.sender's ETH collateral as protocol's fees
     function borrow(uint _amount) public {
         collateralBalance[msg.sender] -= (collateralBalance[msg.sender] / 1000) * 3;
@@ -182,16 +182,16 @@ contract FusionCore {
         isBorrowing[msg.sender] = true;
         borrowBalance[msg.sender] += _amount;
 
-        require(usdcToken.transfer(msg.sender, _amount), "Transaction failed!");
+        require(baseAsset.transfer(msg.sender, _amount), "Transaction failed!");
 
         emit Borrow(msg.sender, _amount);
     }
     
-    ///@notice repays usdc debt
-    ///@param _amount amount of usdc to repay
+    ///@notice repays base asset debt
+    ///@param _amount amount of base asset to repay
     function repay(uint _amount) public {
         require(isBorrowing[msg.sender], "Can't repay before borrowing!");
-        require(usdcToken.balanceOf(msg.sender) >= _amount, "Insufficient funds!");
+        require(baseAsset.balanceOf(msg.sender) >= _amount, "Insufficient funds!");
         require(_amount > 0 && _amount <= borrowBalance[msg.sender], "Can't repay amount: 0 or more than amount borrowed!");
 
         if(_amount == borrowBalance[msg.sender]){ 
@@ -200,7 +200,7 @@ contract FusionCore {
 
         borrowBalance[msg.sender] -= _amount;
 
-        require(usdcToken.transferFrom(msg.sender, address(this), _amount), "Transaction Failed!");
+        require(baseAsset.transferFrom(msg.sender, address(this), _amount), "Transaction Failed!");
 
         emit Repay(msg.sender, _amount);
     }
