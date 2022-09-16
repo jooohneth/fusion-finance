@@ -10,6 +10,7 @@ describe("Fusion Core", () => {
   let fusionCore;
   let fusionToken;
   let mockUsdc;
+  let mockCore;
 
   const usdcAmount = ethers.utils.parseEther("25000");
   const provider = ethers.provider;
@@ -19,6 +20,7 @@ describe("Fusion Core", () => {
     const FusionCore = await ethers.getContractFactory("FusionCore");
     const FusionToken = await ethers.getContractFactory("FusionToken");
     const MockUsdc = await ethers.getContractFactory("MockERC20");
+    const MockCore = await ethers.getContractFactory("MockCore");
 
     mockUsdc = await MockUsdc.deploy("Mock USDC", "mUSDC");
 
@@ -32,6 +34,7 @@ describe("Fusion Core", () => {
 
     fusionToken = await FusionToken.deploy();
     fusionCore = await FusionCore.deploy(mockUsdc.address, fusionToken.address);
+    mockCore = await MockCore.deploy(mockUsdc.address, fusionToken.address);
   });
 
   //Deployment test
@@ -497,8 +500,11 @@ describe("Fusion Core", () => {
       let borrowAmount = ethers.utils.parseEther("700");
 
       await mockUsdc.mint(fusionCore.address, usdcAmount);
+      await mockUsdc.mint(mockCore.address, usdcAmount);
       await fusionCore.connect(alice).collateralize({ value: collatAmount });
       await fusionCore.connect(alice).borrow(borrowAmount);
+      await mockCore.connect(alice).collateralize({ value: collatAmount });
+      await mockCore.connect(alice).borrow(borrowAmount);
     });
 
     it("should return liquidation point", async () => {
@@ -508,6 +514,25 @@ describe("Fusion Core", () => {
 
       let rawResult = await fusionCore.calculateLiquidationPoint(alice.address);
       expect(Number(rawResult)).to.eq(expectedResult);
+    });
+
+    it("should liquidate position", async () => {
+      let rawBeforeBalance = await provider.getBalance(bob.address);
+      let beforeBalance = Number(ethers.utils.formatEther(rawBeforeBalance));
+      let rawCollatBalance = await mockCore.collateralBalance(alice.address);
+      let collatBalance = Number(ethers.utils.formatEther(rawCollatBalance));
+      let expectedResult = beforeBalance + collatBalance * 0.0125;
+
+      expect(await mockCore.connect(bob).liquidate(alice.address)).to.be.ok;
+
+      expect(await mockCore.collateralBalance(alice.address)).to.eq(0);
+      expect(await mockCore.borrowBalance(alice.address)).to.eq(0);
+      expect(await mockCore.isBorrowing(alice.address)).to.eq(false);
+
+      let rawAfterBalance = await provider.getBalance(bob.address);
+      let afterBalance = Number(ethers.utils.formatEther(rawAfterBalance));
+
+      expect(afterBalance).to.closeTo(expectedResult, 0.0001);
     });
 
     it("should revert with position can't be liquidated", async () => {
