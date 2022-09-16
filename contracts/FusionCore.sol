@@ -46,7 +46,7 @@ contract FusionCore {
     } 
 
     ///@notice checks if the borrow position has passed the liquidation point
-    modifier passedLiquidation(address _borrower) {
+    modifier passedLiquidation(address _borrower) virtual {
         uint ethPrice = getEthPrice();
         require((ethPrice * collateralBalance[_borrower]) <= calculateLiquidationPoint(_borrower), "Position can't be liquidated!");
         _;
