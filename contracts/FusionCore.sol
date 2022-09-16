@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./FusionToken.sol";
 
+///@notice Main Fusion Finance contract responsible for lending, collateralizing and borrowing
+///@author John Nguyen (jooohn.eth)
 contract FusionCore {
 
     ///@notice events emitted after each action.
@@ -46,6 +48,7 @@ contract FusionCore {
     } 
 
     ///@notice checks if the borrow position has passed the liquidation point
+    ///@dev added 'virtual' identifier for MockCore to override
     modifier passedLiquidation(address _borrower) virtual {
         uint ethPrice = getEthPrice();
         require((ethPrice * collateralBalance[_borrower]) <= calculateLiquidationPoint(_borrower), "Position can't be liquidated!");
