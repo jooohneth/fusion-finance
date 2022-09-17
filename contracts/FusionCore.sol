@@ -226,4 +226,44 @@ contract FusionCore {
 
         emit Liquidate(msg.sender, liquidationReward, _borrower);
     }
+
+    ///@notice returns lending status of lender
+    function getLendingStatus(address _lender) external view returns(bool){
+        return isLending[_lender];
+    }  
+
+    ///@notice retuns amount of $FUSN tokens earned
+    function getEarnedFusionTokens(address _lender) external view returns(uint){
+        return fusionBalance[_lender] + calculateYieldTotal(_lender);
+    }
+
+    ///@notice returns amount of base asset lent
+    function getLendingBalance(address _lender) external view returns(uint){
+        return lendingBalance[_lender];
+    }
+
+    ///@notice returns amount of collateralized asset
+    function getCollateralBalance(address _borrower) external view returns(uint){
+        return collateralBalance[_borrower];
+    }
+
+    ///@notice returns borrowing status of borrower
+    function getBorrowingStatus(address _borrower) external view returns(bool){
+        return isBorrowing[_borrower];
+    }
+
+    ///@notice returns amount of base asset borrowed
+    function getBorrowBalance(address _borrower) external view returns(uint){
+        return borrowBalance[_borrower];
+    }
+
+    ///@notice returns amount of base asset available to borrow
+    function getBorrowLimit(address _borrower) external view returns(uint){
+        return calculateBorrowLimit(_borrower);
+    }
+
+    ///@notice returns liquidation point
+    function getLiquidationPoint(address _borrower) external view returns(uint){
+        return calculateLiquidationPoint(_borrower);
+    }
 }
