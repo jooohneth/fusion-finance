@@ -9,38 +9,44 @@ describe("Fusion Core", () => {
   let bob;
   let fusionCore;
   let fusionToken;
-  let mockUsdc;
+  let mockBaseAsset;
   let mockCore;
 
-  const usdcAmount = ethers.utils.parseEther("25000");
+  const baseAssetAmount = ethers.utils.parseEther("25000");
   const provider = ethers.provider;
 
-  //Runs before individual tests. Deploying contracts, minting usdc.
+  //Runs before individual tests. Deploying contracts, minting Base Asset.
   beforeEach(async () => {
     const FusionCore = await ethers.getContractFactory("FusionCore");
     const FusionToken = await ethers.getContractFactory("FusionToken");
-    const MockUsdc = await ethers.getContractFactory("MockERC20");
+    const MockBaseAsset = await ethers.getContractFactory("MockERC20");
     const MockCore = await ethers.getContractFactory("MockCore");
 
-    mockUsdc = await MockUsdc.deploy("Mock USDC", "mUSDC");
+    mockBaseAsset = await MockBaseAsset.deploy("Mock Base Asset", "MOCK");
 
     [owner, bob, alice] = await ethers.getSigners();
 
     await Promise.all([
-      mockUsdc.mint(owner.address, usdcAmount),
-      mockUsdc.mint(bob.address, usdcAmount),
-      mockUsdc.mint(alice.address, usdcAmount),
+      mockBaseAsset.mint(owner.address, baseAssetAmount),
+      mockBaseAsset.mint(bob.address, baseAssetAmount),
+      mockBaseAsset.mint(alice.address, baseAssetAmount),
     ]);
 
     fusionToken = await FusionToken.deploy();
-    fusionCore = await FusionCore.deploy(mockUsdc.address, fusionToken.address);
-    mockCore = await MockCore.deploy(mockUsdc.address, fusionToken.address);
+    fusionCore = await FusionCore.deploy(
+      mockBaseAsset.address,
+      fusionToken.address
+    );
+    mockCore = await MockCore.deploy(
+      mockBaseAsset.address,
+      fusionToken.address
+    );
   });
 
   //Deployment test
   describe("Initialize", async () => {
     it("should deploy successfully", async () => {
-      expect(await mockUsdc).to.be.ok;
+      expect(await mockBaseAsset).to.be.ok;
       expect(await fusionToken).to.be.ok;
       expect(await fusionCore).to.be.ok;
     });
@@ -48,27 +54,31 @@ describe("Fusion Core", () => {
 
   //Lending funcionality tests
   describe("Lend", async () => {
-    it("should lend USDC", async () => {
+    it("should lend Base Asset", async () => {
       let lendAmount = ethers.utils.parseEther("100");
 
-      await mockUsdc.connect(alice).approve(fusionCore.address, lendAmount);
+      await mockBaseAsset
+        .connect(alice)
+        .approve(fusionCore.address, lendAmount);
 
       expect(await fusionCore.isLending(alice.address)).to.eq(false);
 
       expect(await fusionCore.connect(alice).lend(lendAmount)).to.be.ok;
-      expect(await mockUsdc.balanceOf(fusionCore.address)).to.eq(lendAmount);
+      expect(await mockBaseAsset.balanceOf(fusionCore.address)).to.eq(
+        lendAmount
+      );
 
       expect(await fusionCore.isLending(alice.address)).to.eq(true);
       expect(await fusionCore.lendingBalance(alice.address)).to.eq(lendAmount);
     });
 
-    it("should lend USDC multiple times", async () => {
+    it("should lend Base Asset multiple times", async () => {
       let lendAmount = ethers.utils.parseEther("100");
 
-      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+      await mockBaseAsset.connect(bob).approve(fusionCore.address, lendAmount);
       expect(await fusionCore.connect(bob).lend(lendAmount)).to.be.ok;
 
-      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+      await mockBaseAsset.connect(bob).approve(fusionCore.address, lendAmount);
       expect(await fusionCore.connect(bob).lend(lendAmount)).to.be.ok;
 
       expect(await fusionCore.lendingBalance(bob.address)).to.eq(
@@ -76,11 +86,13 @@ describe("Fusion Core", () => {
       );
     });
 
-    it("should lend USDC for multiple users", async () => {
+    it("should lend Base Asset for multiple users", async () => {
       let lendAmount = ethers.utils.parseEther("100");
 
-      await mockUsdc.connect(alice).approve(fusionCore.address, lendAmount);
-      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+      await mockBaseAsset
+        .connect(alice)
+        .approve(fusionCore.address, lendAmount);
+      await mockBaseAsset.connect(bob).approve(fusionCore.address, lendAmount);
 
       expect(await fusionCore.connect(alice).lend(lendAmount)).to.be.ok;
       expect(await fusionCore.connect(bob).lend(lendAmount)).to.be.ok;
@@ -98,7 +110,7 @@ describe("Fusion Core", () => {
     it("should revert with insufficient funds", async () => {
       let lendAmount = ethers.utils.parseEther("25001");
 
-      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+      await mockBaseAsset.connect(bob).approve(fusionCore.address, lendAmount);
 
       await expect(fusionCore.connect(bob).lend(lendAmount)).to.be.revertedWith(
         "Insufficient balance!"
@@ -114,12 +126,12 @@ describe("Fusion Core", () => {
     });
   });
 
-  //Withdraw USDC functionality tests
+  //Withdraw Base Asset functionality tests
   describe("Withdraw Lend", async () => {
     beforeEach(async () => {
       let lendAmount = ethers.utils.parseEther("100");
 
-      await mockUsdc.connect(bob).approve(fusionCore.address, lendAmount);
+      await mockBaseAsset.connect(bob).approve(fusionCore.address, lendAmount);
       await fusionCore.connect(bob).lend(lendAmount);
     });
 
@@ -167,7 +179,9 @@ describe("Fusion Core", () => {
       let lendAmount = ethers.utils.parseEther("10");
 
       await fusionToken.transferOwnership(fusionCore.address);
-      await mockUsdc.connect(alice).approve(fusionCore.address, lendAmount);
+      await mockBaseAsset
+        .connect(alice)
+        .approve(fusionCore.address, lendAmount);
       await fusionCore.connect(alice).lend(lendAmount);
     });
 
@@ -211,7 +225,9 @@ describe("Fusion Core", () => {
       let time = 31536000;
       let lendAmount = ethers.utils.parseEther("5");
 
-      await mockUsdc.connect(alice).approve(fusionCore.address, lendAmount);
+      await mockBaseAsset
+        .connect(alice)
+        .approve(fusionCore.address, lendAmount);
 
       await ethers.provider.send("evm_increaseTime", [time]);
       await ethers.provider.send("evm_mine");
@@ -340,13 +356,13 @@ describe("Fusion Core", () => {
     });
   });
 
-  describe("Borrow USDC", () => {
+  describe("Borrow Base Asset", () => {
     beforeEach(async () => {
       let collatAmount = ethers.utils.parseEther("1");
 
       await fusionCore.connect(alice).collateralize({ value: collatAmount });
 
-      await mockUsdc.mint(fusionCore.address, usdcAmount);
+      await mockBaseAsset.mint(fusionCore.address, baseAssetAmount);
     });
 
     it("should calculate borrow limit", async () => {
@@ -363,11 +379,11 @@ describe("Fusion Core", () => {
       expect(result).to.closeTo(expectedResult, 1);
     });
 
-    it("should borrow usdc", async () => {
+    it("should borrow Base Asset", async () => {
       let rawBorrowLimit = await fusionCore.calculateBorrowLimit(alice.address);
       let borrowLimit = ethers.utils.formatEther(rawBorrowLimit);
       let borrowAmount = ethers.utils.parseEther((borrowLimit / 2).toString());
-      let beforeBalance = await mockUsdc.balanceOf(alice.address);
+      let beforeBalance = await mockBaseAsset.balanceOf(alice.address);
 
       expect(await fusionCore.connect(alice).borrow(borrowAmount)).to.be.ok;
 
@@ -376,7 +392,7 @@ describe("Fusion Core", () => {
       let borrowBalance = await fusionCore.borrowBalance(alice.address);
       expect(borrowBalance).to.eq(borrowAmount);
 
-      let afterBalance = await mockUsdc.balanceOf(alice.address);
+      let afterBalance = await mockBaseAsset.balanceOf(alice.address);
       expect(afterBalance).to.eq(beforeBalance.add(borrowAmount));
     });
 
@@ -420,20 +436,22 @@ describe("Fusion Core", () => {
     });
   });
 
-  describe("Repay USDC", async () => {
+  describe("Repay Base Asset", async () => {
     beforeEach(async () => {
       let collatAmount = ethers.utils.parseEther("1");
       let borrowAmount = ethers.utils.parseEther("700");
 
-      await mockUsdc.mint(fusionCore.address, usdcAmount);
+      await mockBaseAsset.mint(fusionCore.address, baseAssetAmount);
       await fusionCore.connect(bob).collateralize({ value: collatAmount });
       await fusionCore.connect(bob).borrow(borrowAmount);
-      await mockUsdc.connect(bob).approve(fusionCore.address, usdcAmount);
+      await mockBaseAsset
+        .connect(bob)
+        .approve(fusionCore.address, baseAssetAmount);
     });
 
     it("should repay amount", async () => {
       let repayAmount = ethers.utils.parseEther("500");
-      let beforeBalance = await mockUsdc.balanceOf(fusionCore.address);
+      let beforeBalance = await mockBaseAsset.balanceOf(fusionCore.address);
 
       expect(await fusionCore.connect(bob).repay(repayAmount)).to.be.ok;
 
@@ -442,7 +460,7 @@ describe("Fusion Core", () => {
         ethers.utils.parseEther("200")
       );
 
-      let afterBalance = await mockUsdc.balanceOf(fusionCore.address);
+      let afterBalance = await mockBaseAsset.balanceOf(fusionCore.address);
       expect(afterBalance).to.eq(beforeBalance.add(repayAmount));
     });
 
@@ -471,8 +489,8 @@ describe("Fusion Core", () => {
     });
 
     it("should revert with insufficient funds", async () => {
-      let balance = await mockUsdc.balanceOf(bob.address);
-      await mockUsdc.connect(bob).transfer(alice.address, balance);
+      let balance = await mockBaseAsset.balanceOf(bob.address);
+      await mockBaseAsset.connect(bob).transfer(alice.address, balance);
 
       await expect(fusionCore.connect(bob).repay(1)).to.be.revertedWith(
         "Insufficient funds!"
@@ -499,8 +517,8 @@ describe("Fusion Core", () => {
       let collatAmount = ethers.utils.parseEther("1");
       let borrowAmount = ethers.utils.parseEther("700");
 
-      await mockUsdc.mint(fusionCore.address, usdcAmount);
-      await mockUsdc.mint(mockCore.address, usdcAmount);
+      await mockBaseAsset.mint(fusionCore.address, baseAssetAmount);
+      await mockBaseAsset.mint(mockCore.address, baseAssetAmount);
       await fusionCore.connect(alice).collateralize({ value: collatAmount });
       await fusionCore.connect(alice).borrow(borrowAmount);
       await mockCore.connect(alice).collateralize({ value: collatAmount });
