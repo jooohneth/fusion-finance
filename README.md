@@ -2,6 +2,13 @@
 
 ### Author: [John Nguyen](https://github.com/jooohneth)
 
+## Info
+
+- [Web-app](https://fusion-finance.vercel.app/)
+- [Fusion token address on Goerli](https://goerli.etherscan.io/token/0x61210d5491a8E6e2B9EAF93075364d6301Ba72ED)
+- [Fusion core address on Goerli](https://goerli.etherscan.io/address/0xD725F3aD2355CfC57ac0F33fE0378442c4dA17eE)
+- [DAI address on Goerli](https://goerli.etherscan.io/token/0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844)
+
 ## Overview
 
 A decentralized lending and borrowing protocol for users to lend and borrow Base Asset. A completely trustless environment for both lenders and borrowers, built on top of Ethereum and Ethereum L2 solutions. Lenders supply the protocol with Base Asset and in return earn interest in a form of $FUSN tokens, protocol’s governance token. Thanks to lenders, our protocol will have liquidity to supply the borrowers with Base Asset. In order for borrowers to borrow they will have to collateralize ETH, our protocol works in an over-collateralized model, meaning borrower’s ETH collateral amount > Base Asset amount they can borrow. The borrowers pay interest to the protocol in order to maintain it, the interest will be deducted from ETH collateral when the borrower borrows Base Asset. In case of liquidation, our protocol keeps the borrower's ETH collateral and rewards the liquidator.
