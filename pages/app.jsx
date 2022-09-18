@@ -35,6 +35,122 @@ export default function App() {
   const baseAssetAddress = chainId in daiAddress ? daiAddress[chainId] : null;
 
   useEffect(() => {
+    const getFusionBalance = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        fusionTokenAbi,
+        signer
+      );
+      const address = await signer.getAddress();
+      const rawBalance = await tokenContract.balanceOf(address);
+      const balance = Number.parseFloat(
+        ethers.utils.formatEther(rawBalance)
+      ).toFixed(3);
+      setFusnBalance(balance);
+    };
+    const getDaiBalance = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const daiContract = new ethers.Contract(baseAssetAddress, daiAbi, signer);
+      const address = await signer.getAddress();
+      const rawBalance = await daiContract.balanceOf(address);
+      const balance = Number.parseFloat(
+        ethers.utils.formatEther(rawBalance)
+      ).toFixed(3);
+      setDaiBalance(balance);
+    };
+    const getEarnedTokens = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const coreContract = new ethers.Contract(
+        coreAddress,
+        fusionCoreAbi,
+        signer
+      );
+      const address = await signer.getAddress();
+      const rawEarnedAmount = await coreContract.getEarnedFusionTokens(address);
+      const earnedAmount = Number.parseFloat(
+        ethers.utils.formatEther(rawEarnedAmount)
+      ).toFixed(3);
+      setEarnedTokens(earnedAmount);
+    };
+    const getLendingBalance = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const coreContract = new ethers.Contract(
+        coreAddress,
+        fusionCoreAbi,
+        signer
+      );
+      const address = await signer.getAddress();
+      const rawAmount = await coreContract.getLendingBalance(address);
+      const amount = Number.parseFloat(
+        ethers.utils.formatEther(rawAmount)
+      ).toFixed(3);
+      setLendingBalance(amount);
+    };
+    const getBorrowBalance = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const coreContract = new ethers.Contract(
+        coreAddress,
+        fusionCoreAbi,
+        signer
+      );
+      const address = await signer.getAddress();
+      const rawAmount = await coreContract.getBorrowBalance(address);
+      const amount = Number.parseFloat(
+        ethers.utils.formatEther(rawAmount)
+      ).toFixed(3);
+      setBorrowBalance(amount);
+    };
+    const getCollateralBalance = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const coreContract = new ethers.Contract(
+        coreAddress,
+        fusionCoreAbi,
+        signer
+      );
+      const address = await signer.getAddress();
+      const rawAmount = await coreContract.getCollateralBalance(address);
+      const amount = Number.parseFloat(
+        ethers.utils.formatEther(rawAmount)
+      ).toFixed(3);
+      setCollateralBalance(amount);
+    };
+    const getBorrowLimit = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const coreContract = new ethers.Contract(
+        coreAddress,
+        fusionCoreAbi,
+        signer
+      );
+      const address = await signer.getAddress();
+      const rawAmount = await coreContract.getBorrowLimit(address);
+      const amount = Number.parseFloat(
+        ethers.utils.formatEther(rawAmount)
+      ).toFixed(3);
+      setBorrowLimit(amount);
+    };
+    const getLiquidationPoint = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const coreContract = new ethers.Contract(
+        coreAddress,
+        fusionCoreAbi,
+        signer
+      );
+      const address = await signer.getAddress();
+      const rawAmount = await coreContract.getLiquidationPoint(address);
+      const amount = Number.parseFloat(
+        ethers.utils.formatEther(rawAmount)
+      ).toFixed(3);
+      setLiquidationPoint(amount);
+    };
     if (isWeb3Enabled && coreAddress) {
       getFusionBalance();
       getDaiBalance();
@@ -45,131 +161,7 @@ export default function App() {
       getBorrowLimit();
       getLiquidationPoint();
     }
-  }, [isWeb3Enabled, coreAddress]);
-
-  const getFusionBalance = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const tokenContract = new ethers.Contract(
-      tokenAddress,
-      fusionTokenAbi,
-      signer
-    );
-    const address = await signer.getAddress();
-    const rawBalance = await tokenContract.balanceOf(address);
-    const balance = Number.parseFloat(
-      ethers.utils.formatEther(rawBalance)
-    ).toFixed(2);
-    setFusnBalance(balance);
-  };
-
-  const getDaiBalance = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const daiContract = new ethers.Contract(baseAssetAddress, daiAbi, signer);
-    const address = await signer.getAddress();
-    const rawBalance = await daiContract.balanceOf(address);
-    const balance = Number.parseFloat(
-      ethers.utils.formatEther(rawBalance)
-    ).toFixed(2);
-    setDaiBalance(balance);
-  };
-
-  const getEarnedTokens = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const coreContract = new ethers.Contract(
-      coreAddress,
-      fusionCoreAbi,
-      signer
-    );
-    const address = await signer.getAddress();
-    const rawEarnedAmount = await coreContract.getEarnedFusionTokens(address);
-    const earnedAmount = Number.parseFloat(
-      ethers.utils.formatEther(rawEarnedAmount)
-    ).toFixed(2);
-    setEarnedTokens(earnedAmount);
-  };
-
-  const getLendingBalance = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const coreContract = new ethers.Contract(
-      coreAddress,
-      fusionCoreAbi,
-      signer
-    );
-    const address = await signer.getAddress();
-    const rawAmount = await coreContract.getLendingBalance(address);
-    const amount = Number.parseFloat(
-      ethers.utils.formatEther(rawAmount)
-    ).toFixed(2);
-    setLendingBalance(amount);
-  };
-
-  const getBorrowBalance = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const coreContract = new ethers.Contract(
-      coreAddress,
-      fusionCoreAbi,
-      signer
-    );
-    const address = await signer.getAddress();
-    const rawAmount = await coreContract.getBorrowBalance(address);
-    const amount = Number.parseFloat(
-      ethers.utils.formatEther(rawAmount)
-    ).toFixed(2);
-    setBorrowBalance(amount);
-  };
-
-  const getCollateralBalance = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const coreContract = new ethers.Contract(
-      coreAddress,
-      fusionCoreAbi,
-      signer
-    );
-    const address = await signer.getAddress();
-    const rawAmount = await coreContract.getCollateralBalance(address);
-    const amount = Number.parseFloat(
-      ethers.utils.formatEther(rawAmount)
-    ).toFixed(2);
-    setCollateralBalance(amount);
-  };
-
-  const getBorrowLimit = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const coreContract = new ethers.Contract(
-      coreAddress,
-      fusionCoreAbi,
-      signer
-    );
-    const address = await signer.getAddress();
-    const rawAmount = await coreContract.getBorrowLimit(address);
-    const amount = Number.parseFloat(
-      ethers.utils.formatEther(rawAmount)
-    ).toFixed(2);
-    setBorrowLimit(amount);
-  };
-
-  const getLiquidationPoint = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const coreContract = new ethers.Contract(
-      coreAddress,
-      fusionCoreAbi,
-      signer
-    );
-    const address = await signer.getAddress();
-    const rawAmount = await coreContract.getLiquidationPoint(address);
-    const amount = Number.parseFloat(
-      ethers.utils.formatEther(rawAmount)
-    ).toFixed(2);
-    setLiquidationPoint(amount);
-  };
+  }, [isWeb3Enabled, coreAddress, tokenAddress, baseAssetAddress]);
 
   if (!isWeb3Enabled) {
     return (
@@ -204,10 +196,19 @@ export default function App() {
           borrowBalance={borrowBalance}
           collateralBalance={collateralBalance}
         />
-        <CollateralSection collateralBalance={collateralBalance} />
+        <CollateralSection
+          collateralBalance={collateralBalance}
+          coreAddress={coreAddress}
+          coreAbi={fusionCoreAbi}
+        />
       </main>
       <aside className="flex flex-col gap-y-6 pt-6 pr-6 w-96">
-        <ControlSection />
+        <ControlSection
+          coreAddress={coreAddress}
+          coreAbi={fusionCoreAbi}
+          daiAddress={baseAssetAddress}
+          daiAbi={daiAbi}
+        />
         <PositionSection
           borrowLimit={borrowLimit}
           liquidationPoint={liquidationPoint}

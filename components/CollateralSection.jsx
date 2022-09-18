@@ -1,9 +1,39 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, useRef } from "react";
+import { ethers } from "ethers";
 import Modal from "./Modal.jsx";
 
-const CollateralSection = ({ collateralBalance }) => {
+const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
   const [showCollateralize, setShowCollateralize] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
+
+  const collatAmount = useRef(0);
+  const withdrawAmount = useRef(0);
+
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+  const coreContract = new ethers.Contract(coreAddress, coreAbi, signer);
+
+  const collateralize = async (e) => {
+    e.preventDefault();
+    try {
+      let amount = ethers.utils.parseEther(collatAmount.current.value);
+      await coreContract.collateralize({ value: amount });
+    } catch (err) {
+      console.log(err.error.message);
+    }
+    setShowCollateralize(false);
+  };
+
+  const withdraw = async (e) => {
+    e.preventDefault();
+    try {
+      let amount = ethers.utils.parseEther(withdrawAmount.current.value);
+      await coreContract.withdrawCollateral(amount);
+    } catch (err) {
+      console.log(err.error.message);
+    }
+    setShowWithdraw(false);
+  };
 
   return (
     <Fragment>
@@ -58,11 +88,15 @@ const CollateralSection = ({ collateralBalance }) => {
             type="text"
             className="bg-transparent placeholder:text-gray-400 outline-none w-full text-xl"
             placeholder="0.00"
+            ref={collatAmount}
           />
           <div className="text-white">ETH</div>
         </div>
         <div className="p-8">
-          <button className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold">
+          <button
+            onClick={collateralize}
+            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+          >
             Collateralize
           </button>
         </div>
@@ -76,11 +110,15 @@ const CollateralSection = ({ collateralBalance }) => {
             type="text"
             className="bg-transparent placeholder:text-gray-400 outline-none w-full text-xl"
             placeholder="0.00"
+            ref={withdrawAmount}
           />
           <div className="text-white">ETH</div>
         </div>
         <div className="p-8">
-          <button className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold">
+          <button
+            onClick={withdraw}
+            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+          >
             Withdraw
           </button>
         </div>

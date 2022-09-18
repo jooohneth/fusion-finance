@@ -1,11 +1,86 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, useRef } from "react";
+import { ethers } from "ethers";
 import Modal from "./Modal.jsx";
 
-const ControlSection = () => {
+const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
   const [showLend, setShowLend] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showBorrow, setShowBorrow] = useState(false);
   const [showRepay, setShowRepay] = useState(false);
+
+  const lendAmount = useRef(0);
+  const withdrawAmount = useRef(0);
+  const borrowAmount = useRef(0);
+  const repayAmount = useRef(0);
+
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+  const coreContract = new ethers.Contract(coreAddress, coreAbi, signer);
+
+  const approve = async (e, tokenAmount) => {
+    e.preventDefault();
+    try {
+      let amount = ethers.utils.parseEther(tokenAmount);
+      const daiContract = new ethers.Contract(daiAddress, daiAbi, signer);
+      await daiContract.approve(coreAddress, amount);
+    } catch (err) {
+      console.log(err.error.message);
+    }
+    setShowLend(false);
+  };
+
+  const lend = async (e) => {
+    e.preventDefault();
+    try {
+      let amount = ethers.utils.parseEther(lendAmount.current.value);
+      await coreContract.lend(amount);
+    } catch (err) {
+      console.log(err.error.message);
+    }
+    setShowLend(false);
+  };
+
+  const withdraw = async (e) => {
+    e.preventDefault();
+    try {
+      let amount = ethers.utils.parseEther(withdrawAmount.current.value);
+      await coreContract.withdrawLend(amount);
+    } catch (err) {
+      console.log(err.error.message);
+    }
+    setShowWithdraw(false);
+  };
+
+  const borrow = async (e) => {
+    e.preventDefault();
+    try {
+      let amount = ethers.utils.parseEther(borrowAmount.current.value);
+      await coreContract.borrow(amount);
+    } catch (err) {
+      console.log(err.error.message);
+    }
+    setShowBorrow(false);
+  };
+
+  const repay = async (e) => {
+    e.preventDefault();
+    try {
+      let amount = ethers.utils.parseEther(repayAmount.current.value);
+      await coreContract.repay(amount);
+    } catch (err) {
+      console.log(err.error.message);
+    }
+    setShowRepay(false);
+  };
+
+  const claimTokens = async (e) => {
+    e.preventDefault();
+    try {
+      await coreContract.claimYield();
+    } catch (err) {
+      console.log(err.error.message);
+    }
+  };
 
   return (
     <Fragment>
@@ -42,7 +117,10 @@ const ControlSection = () => {
         >
           Repay
         </button>
-        <button className="py-3.5 rounded-lg w-full bg-secondary text-white text-sm font-semibold">
+        <button
+          onClick={claimTokens}
+          className="py-3.5 rounded-lg w-full bg-secondary text-white text-sm font-semibold"
+        >
           Claim FUSN
         </button>
       </div>
@@ -60,11 +138,23 @@ const ControlSection = () => {
             type="text"
             className="bg-transparent placeholder:text-gray-400 outline-none w-full text-xl"
             placeholder="0.00"
+            ref={lendAmount}
           />
           <div className="text-white">DAI</div>
         </div>
         <div className="p-8">
-          <button className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold">
+          <button
+            onClick={(event) => {
+              approve(event, lendAmount.current.value);
+            }}
+            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+          >
+            Approve
+          </button>
+          <button
+            onClick={lend}
+            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+          >
             Lend
           </button>
         </div>
@@ -83,11 +173,15 @@ const ControlSection = () => {
             type="text"
             className="bg-transparent placeholder:text-gray-400 outline-none w-full text-xl"
             placeholder="0.00"
+            ref={withdrawAmount}
           />
           <div className="text-white">DAI</div>
         </div>
         <div className="p-8">
-          <button className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold">
+          <button
+            onClick={withdraw}
+            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+          >
             Withdraw
           </button>
         </div>
@@ -106,11 +200,15 @@ const ControlSection = () => {
             type="text"
             className="bg-transparent placeholder:text-gray-400 outline-none w-full text-xl"
             placeholder="0.00"
+            ref={borrowAmount}
           />
           <div className="text-white">DAI</div>
         </div>
         <div className="p-8">
-          <button className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold">
+          <button
+            onClick={borrow}
+            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+          >
             Borrow
           </button>
         </div>
@@ -129,11 +227,23 @@ const ControlSection = () => {
             type="text"
             className="bg-transparent placeholder:text-gray-400 outline-none w-full text-xl"
             placeholder="0.00"
+            ref={repayAmount}
           />
           <div className="text-white">DAI</div>
         </div>
         <div className="p-8">
-          <button className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold">
+          <button
+            onClick={(event) => {
+              approve(event, repayAmount.current.value);
+            }}
+            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+          >
+            Approve
+          </button>
+          <button
+            onClick={repay}
+            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+          >
             Repay
           </button>
         </div>
