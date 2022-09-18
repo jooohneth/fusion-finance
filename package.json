@@ -22,12 +22,15 @@
     "@nomiclabs/hardhat-etherscan": "^3.1.0",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^4.7.3",
+    "@walletconnect/web3-provider": "^1.8.0",
+    "@web3auth/web3auth": "^2.1.2",
     "autoprefixer": "^10.4.11",
     "chai": "^4.3.6",
     "dotenv": "^16.0.2",
     "eslint": "8.23.0",
     "eslint-config-next": "12.2.5",
     "hardhat": "^2.11.0",
+    "magic-sdk": "^9.0.0",
     "postcss": "^8.4.16",
     "tailwindcss": "^3.1.8"
   }
