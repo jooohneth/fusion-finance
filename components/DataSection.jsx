@@ -1,6 +1,7 @@
 import React from "react";
 
 const DataSection = ({
+  fusnBalance,
   daiBalance,
   earnedTokens,
   lendingBalance,
@@ -40,6 +41,16 @@ const DataSection = ({
       <div className="flex flex-row justify-evenly p-4 w-1/2 bg-gray-900 rounded-lg gap-y-3">
         <div className="flex flex-col justify-around">
           <div className="flex items-center gap-x-3 gap-y-3">
+            <div className="text-xs text-primary font-medium ">
+              FUSN Wallet Balance
+            </div>
+          </div>
+          <div className="text-xl font-semibold text-white">
+            {fusnBalance} FUSN
+          </div>
+        </div>
+        <div className="flex flex-col justify-around">
+          <div className="flex items-center gap-x-3 gap-y-3">
             <div className="text-xs text-secondary font-medium ">
               DAI Wallet Balance
             </div>
@@ -47,14 +58,6 @@ const DataSection = ({
           <div className="text-xl font-semibold text-white">
             {daiBalance} DAI
           </div>
-        </div>
-        <div className="flex flex-row justify-around items-center">
-          <a className="mx-3 text-primary text-sm font-semibold cursor-pointer underline underline-offset-4">
-            Withdraw
-          </a>
-          <a className="mx-3 text-primary text-sm font-semibold cursor-pointer underline underline-offset-4">
-            Repay
-          </a>
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ import CollateralSection from "../components/CollateralSection.jsx";
 import PositionSection from "../components/PositionSection.jsx";
 
 export default function App() {
+  const [fusnBalance, setFusnBalance] = useState(0);
   const [daiBalance, setDaiBalance] = useState(0);
   const [earnedTokens, setEarnedTokens] = useState(0);
   const [lendingBalance, setLendingBalance] = useState(0);
@@ -35,6 +36,7 @@ export default function App() {
 
   useEffect(() => {
     if (isWeb3Enabled && coreAddress) {
+      getFusionBalance();
       getDaiBalance();
       getEarnedTokens();
       getLendingBalance();
@@ -44,6 +46,22 @@ export default function App() {
       getLiquidationPoint();
     }
   }, [isWeb3Enabled, coreAddress]);
+
+  const getFusionBalance = async () => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      fusionTokenAbi,
+      signer
+    );
+    const address = await signer.getAddress();
+    const rawBalance = await tokenContract.balanceOf(address);
+    const balance = Number.parseFloat(
+      ethers.utils.formatEther(rawBalance)
+    ).toFixed(2);
+    setFusnBalance(balance);
+  };
 
   const getDaiBalance = async () => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -172,30 +190,29 @@ export default function App() {
   }
 
   return (
-    <div>
-      <div className="flex w-full min-h-screen font-sans bg-primaryBg">
-        <main className="flex flex-col flex-1 gap-6 p-8">
-          <header>
-            <h1 className="text-3xl font-semibold text-white">Dashboard</h1>
-          </header>
-          <hr className="border-secondary" />
-          <DataSection
-            daiBalance={daiBalance}
-            earnedTokens={earnedTokens}
-            lendingBalance={lendingBalance}
-            borrowBalance={borrowBalance}
-            collateralBalance={collateralBalance}
-          />
-          <CollateralSection collateralBalance={collateralBalance} />
-        </main>
-        <aside className="flex flex-col gap-y-6 pt-6 pr-6 w-96">
-          <ControlSection />
-          <PositionSection
-            borrowLimit={borrowLimit}
-            liquidationPoint={liquidationPoint}
-          />
-        </aside>
-      </div>
+    <div className="flex w-full min-h-screen font-sans bg-primaryBg">
+      <main className="flex flex-col flex-1 gap-6 p-8">
+        <header>
+          <h1 className="text-3xl font-semibold text-white">Dashboard</h1>
+        </header>
+        <hr className="border-secondary" />
+        <DataSection
+          fusnBalance={fusnBalance}
+          daiBalance={daiBalance}
+          earnedTokens={earnedTokens}
+          lendingBalance={lendingBalance}
+          borrowBalance={borrowBalance}
+          collateralBalance={collateralBalance}
+        />
+        <CollateralSection collateralBalance={collateralBalance} />
+      </main>
+      <aside className="flex flex-col gap-y-6 pt-6 pr-6 w-96">
+        <ControlSection />
+        <PositionSection
+          borrowLimit={borrowLimit}
+          liquidationPoint={liquidationPoint}
+        />
+      </aside>
     </div>
   );
 }
