@@ -1,6 +1,6 @@
 import React from "react";
 
-const CollateralSection = () => {
+const CollateralSection = ({ collateralBalance }) => {
   return (
     <div className="p-6 bg-gray-900 rounded-lg">
       <table className="w-full">
@@ -22,7 +22,7 @@ const CollateralSection = () => {
                 <span className="font-bold text-md"> Ethereum </span>
               </div>
             </td>
-            <td className="py-4">700.00 Ξ</td>
+            <td className="py-4">{collateralBalance} Ξ</td>
             <td className="py-4 flex justify-center">
               <button className="flex justify-center py-3 mx-1 rounded-full w-12 border-2 border-secondary text-secondary text-sm font-bold">
                 +
