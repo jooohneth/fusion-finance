@@ -6,7 +6,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.GOERLI_FORK_RPC,
+        url: process.env.GOERLI_RPC,
       },
       chainId: 1337,
     },
