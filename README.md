@@ -1,4 +1,4 @@
-# Fusion Finance
+# Fusion Finance / Contracts development branch
 
 ### Author: [John Nguyen](https://github.com/jooohneth)
 
