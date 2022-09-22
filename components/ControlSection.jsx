@@ -47,6 +47,18 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
     });
   };
 
+  const error = (msg) => {
+    toast.error(msg, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+  };
+
   const approve = async (e, tokenAmount) => {
     e.preventDefault();
     try {
@@ -57,7 +69,7 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
       await tx.wait();
       success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     e.target.id === "lend" ? setApprovedLend(true) : setApprovedRepay(true);
   };
@@ -66,13 +78,13 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
     e.preventDefault();
     try {
       let amount = ethers.utils.parseEther(lendAmount.current.value);
-      const tx = await coreContract.lend(amount);
+      let tx = await coreContract.lend(amount);
       pending();
       await tx.wait();
       success();
       setApprovedLend(false);
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowLend(false);
   };
@@ -86,7 +98,7 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
       await tx.wait();
       success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowWithdraw(false);
   };
@@ -100,7 +112,7 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
       await tx.wait();
       success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowBorrow(false);
   };
@@ -115,7 +127,7 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
       success();
       setApprovedRepay(false);
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowRepay(false);
   };
@@ -128,7 +140,7 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
       await tx.wait();
       success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
   };
 
