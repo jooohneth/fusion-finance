@@ -2,24 +2,67 @@ import { Fragment, useState, useRef } from "react";
 import { ethers } from "ethers";
 import Modal from "./Modal.jsx";
 
+import { ToastContainer, toast, Slide } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
   const [showCollateralize, setShowCollateralize] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
 
   const collatAmount = useRef(0);
   const withdrawAmount = useRef(0);
+  const toastId = useRef(null);
 
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   const signer = provider.getSigner();
   const coreContract = new ethers.Contract(coreAddress, coreAbi, signer);
 
+  const pending = () =>
+    (toastId.current = toast.info("Transaction Pending...", {
+      position: "top-right",
+      autoClose: false,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    }));
+
+  const success = () => {
+    toast.dismiss(toastId.current);
+    toast.success("Transaction Complete!", {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+  };
+
+  const error = (msg) => {
+    toast.error(msg, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+  };
+
   const collateralize = async (e) => {
     e.preventDefault();
     try {
       let amount = ethers.utils.parseEther(collatAmount.current.value);
-      await coreContract.collateralize({ value: amount });
+      const tx = await coreContract.collateralize({ value: amount });
+      pending();
+      await tx.wait();
+      success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowCollateralize(false);
   };
@@ -28,9 +71,12 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
     e.preventDefault();
     try {
       let amount = ethers.utils.parseEther(withdrawAmount.current.value);
-      await coreContract.withdrawCollateral(amount);
+      const tx = await coreContract.withdrawCollateral(amount);
+      pending();
+      await tx.wait();
+      success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowWithdraw(false);
   };
@@ -123,6 +169,18 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
           </button>
         </div>
       </Modal>
+      <ToastContainer
+        transition={Slide}
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </Fragment>
   );
 };

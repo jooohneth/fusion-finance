@@ -2,40 +2,89 @@ import { Fragment, useState, useRef } from "react";
 import { ethers } from "ethers";
 import Modal from "./Modal.jsx";
 
+import { ToastContainer, toast, Slide } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
   const [showLend, setShowLend] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showBorrow, setShowBorrow] = useState(false);
   const [showRepay, setShowRepay] = useState(false);
+  const [approvedLend, setApprovedLend] = useState(false);
+  const [approvedRepay, setApprovedRepay] = useState(false);
 
   const lendAmount = useRef(0);
   const withdrawAmount = useRef(0);
   const borrowAmount = useRef(0);
   const repayAmount = useRef(0);
+  const toastId = useRef(null);
 
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   const signer = provider.getSigner();
   const coreContract = new ethers.Contract(coreAddress, coreAbi, signer);
+
+  const pending = () =>
+    (toastId.current = toast.info("Transaction Pending...", {
+      position: "top-right",
+      autoClose: false,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    }));
+
+  const success = () => {
+    toast.dismiss(toastId.current);
+    toast.success("Transaction Complete!", {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+  };
+
+  const error = (msg) => {
+    toast.error(msg, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+  };
 
   const approve = async (e, tokenAmount) => {
     e.preventDefault();
     try {
       let amount = ethers.utils.parseEther(tokenAmount);
       const daiContract = new ethers.Contract(daiAddress, daiAbi, signer);
-      await daiContract.approve(coreAddress, amount);
+      const tx = await daiContract.approve(coreAddress, amount);
+      pending();
+      await tx.wait();
+      success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
-    setShowLend(false);
+    e.target.id === "lend" ? setApprovedLend(true) : setApprovedRepay(true);
   };
 
   const lend = async (e) => {
     e.preventDefault();
     try {
       let amount = ethers.utils.parseEther(lendAmount.current.value);
-      await coreContract.lend(amount);
+      let tx = await coreContract.lend(amount);
+      pending();
+      await tx.wait();
+      success();
+      setApprovedLend(false);
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowLend(false);
   };
@@ -44,9 +93,12 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
     e.preventDefault();
     try {
       let amount = ethers.utils.parseEther(withdrawAmount.current.value);
-      await coreContract.withdrawLend(amount);
+      const tx = await coreContract.withdrawLend(amount);
+      pending();
+      await tx.wait();
+      success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowWithdraw(false);
   };
@@ -55,9 +107,12 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
     e.preventDefault();
     try {
       let amount = ethers.utils.parseEther(borrowAmount.current.value);
-      await coreContract.borrow(amount);
+      const tx = await coreContract.borrow(amount);
+      pending();
+      await tx.wait();
+      success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowBorrow(false);
   };
@@ -66,9 +121,13 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
     e.preventDefault();
     try {
       let amount = ethers.utils.parseEther(repayAmount.current.value);
-      await coreContract.repay(amount);
+      const tx = await coreContract.repay(amount);
+      pending();
+      await tx.wait();
+      success();
+      setApprovedRepay(false);
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowRepay(false);
   };
@@ -76,9 +135,12 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
   const claimTokens = async (e) => {
     e.preventDefault();
     try {
-      await coreContract.claimYield();
+      const tx = await coreContract.claimYield();
+      pending();
+      await tx.wait();
+      success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
   };
 
@@ -143,20 +205,25 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
           <div className="text-white">DAI</div>
         </div>
         <div className="p-8">
-          <button
-            onClick={(event) => {
-              approve(event, lendAmount.current.value);
-            }}
-            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
-          >
-            Approve
-          </button>
-          <button
-            onClick={lend}
-            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
-          >
-            Lend
-          </button>
+          {!approvedLend ? (
+            <button
+              id="lend"
+              onClick={(event) => {
+                approve(event, lendAmount.current.value);
+              }}
+              className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+            >
+              Approve
+            </button>
+          ) : null}
+          {approvedLend ? (
+            <button
+              onClick={lend}
+              className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+            >
+              Lend
+            </button>
+          ) : null}
         </div>
       </Modal>
       <Modal
@@ -232,22 +299,38 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
           <div className="text-white">DAI</div>
         </div>
         <div className="p-8">
-          <button
-            onClick={(event) => {
-              approve(event, repayAmount.current.value);
-            }}
-            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
-          >
-            Approve
-          </button>
-          <button
-            onClick={repay}
-            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
-          >
-            Repay
-          </button>
+          {!approvedRepay ? (
+            <button
+              onClick={(event) => {
+                approve(event, repayAmount.current.value);
+              }}
+              className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+            >
+              Approve
+            </button>
+          ) : null}
+          {approvedRepay ? (
+            <button
+              onClick={repay}
+              className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+            >
+              Repay
+            </button>
+          ) : null}
         </div>
       </Modal>
+      <ToastContainer
+        transition={Slide}
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </Fragment>
   );
 };

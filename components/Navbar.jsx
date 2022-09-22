@@ -2,13 +2,10 @@ import { useState, useEffect } from "react";
 import { ConnectButton } from "web3uikit";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ethers } from "ethers";
 
 const Navbar = () => {
   const [pageName, setPageName] = useState("");
   const router = useRouter();
-
-  const [fusionBalance, setFusionBalance] = useState(0);
 
   useEffect(() => {
     const _pageName = router.pathname;
@@ -47,9 +44,9 @@ const Navbar = () => {
                 </svg>
               </span>
               <span className="absolute flex items-center justify-center w-full h-full text-primary transition-all duration-300 transform group-hover:translate-x-full ease">
-                App
+                Launch App
               </span>
-              <span className="relative invisible">App</span>
+              <span className="relative invisible">Launch App</span>
             </a>
           </Link>
         )}
@@ -61,7 +58,6 @@ const Navbar = () => {
           </div>
         )}
       </nav>
-      <hr className="border-secondary" />
     </div>
   );
 };
