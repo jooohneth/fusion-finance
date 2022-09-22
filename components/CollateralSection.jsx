@@ -62,7 +62,7 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
       await tx.wait();
       success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowCollateralize(false);
   };
@@ -76,7 +76,7 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
       await tx.wait();
       success();
     } catch (err) {
-      console.log(err.error.message);
+      error({ err }.err.reason);
     }
     setShowWithdraw(false);
   };
