@@ -7,6 +7,8 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showBorrow, setShowBorrow] = useState(false);
   const [showRepay, setShowRepay] = useState(false);
+  const [approvedLend, setApprovedLend] = useState(false);
+  const [approvedRepay, setApprovedRepay] = useState(false);
 
   const lendAmount = useRef(0);
   const withdrawAmount = useRef(0);
@@ -26,7 +28,7 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
     } catch (err) {
       console.log(err.error.message);
     }
-    setShowLend(false);
+    e.target.id === "lend" ? setApprovedLend(true) : setApprovedRepay(true);
   };
 
   const lend = async (e) => {
@@ -34,6 +36,7 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
     try {
       let amount = ethers.utils.parseEther(lendAmount.current.value);
       await coreContract.lend(amount);
+      setApprovedLend(false);
     } catch (err) {
       console.log(err.error.message);
     }
@@ -67,6 +70,7 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
     try {
       let amount = ethers.utils.parseEther(repayAmount.current.value);
       await coreContract.repay(amount);
+      setApprovedRepay(false);
     } catch (err) {
       console.log(err.error.message);
     }
@@ -143,20 +147,25 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
           <div className="text-white">DAI</div>
         </div>
         <div className="p-8">
-          <button
-            onClick={(event) => {
-              approve(event, lendAmount.current.value);
-            }}
-            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
-          >
-            Approve
-          </button>
-          <button
-            onClick={lend}
-            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
-          >
-            Lend
-          </button>
+          {!approvedLend ? (
+            <button
+              id="lend"
+              onClick={(event) => {
+                approve(event, lendAmount.current.value);
+              }}
+              className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+            >
+              Approve
+            </button>
+          ) : null}
+          {approvedLend ? (
+            <button
+              onClick={lend}
+              className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+            >
+              Lend
+            </button>
+          ) : null}
         </div>
       </Modal>
       <Modal
@@ -232,20 +241,24 @@ const ControlSection = ({ coreAddress, coreAbi, daiAddress, daiAbi }) => {
           <div className="text-white">DAI</div>
         </div>
         <div className="p-8">
-          <button
-            onClick={(event) => {
-              approve(event, repayAmount.current.value);
-            }}
-            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
-          >
-            Approve
-          </button>
-          <button
-            onClick={repay}
-            className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
-          >
-            Repay
-          </button>
+          {!approvedRepay ? (
+            <button
+              onClick={(event) => {
+                approve(event, repayAmount.current.value);
+              }}
+              className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+            >
+              Approve
+            </button>
+          ) : null}
+          {approvedRepay ? (
+            <button
+              onClick={repay}
+              className="py-3.5 rounded-lg w-full border border-secondary hover:bg-secondary text-secondary hover:text-white  text-sm font-semibold"
+            >
+              Repay
+            </button>
+          ) : null}
         </div>
       </Modal>
     </Fragment>
