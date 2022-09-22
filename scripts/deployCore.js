@@ -2,16 +2,23 @@ const { ethers, network } = require("hardhat");
 
 const main = async () => {
   let baseAssetAddress;
+  let aggregatorAddress;
 
   if (network.name === "hardhat") {
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     let baseAsset = await MockERC20.deploy("Mock Asset", "MOCK");
     baseAssetAddress = baseAsset.address;
-    console.log(`Base asset mock address: ${baseAssetAddress}`);
+    aggregatorAddress = "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e";
   } else if (network.name === "goerli") {
     baseAssetAddress = "0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844";
-    console.log(`Base asset address: ${baseAssetAddress}`);
+    aggregatorAddress = "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e";
+  } else if (network.name === "polygon") {
+    baseAssetAddress = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
+    aggregatorAddress = "0xF9680D99D6C9589e2a93a78A04A279e509205945";
   }
+
+  console.log(`Base asset address: ${baseAssetAddress}`);
+  console.log(`Chainlink aggregator address ${aggregatorAddress}`);
 
   const FusionToken = await ethers.getContractFactory("FusionToken");
   const fusionToken = await FusionToken.deploy();
@@ -22,7 +29,8 @@ const main = async () => {
   const FusionCore = await ethers.getContractFactory("FusionCore");
   const fusionCore = await FusionCore.deploy(
     baseAssetAddress,
-    fusionToken.address
+    fusionToken.address,
+    aggregatorAddress
   );
   console.log(
     `Fusion Core address: ${fusionCore.address}, deployer: ${fusionCore.signer.address}`
