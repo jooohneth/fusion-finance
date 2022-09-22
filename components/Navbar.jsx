@@ -2,13 +2,10 @@ import { useState, useEffect } from "react";
 import { ConnectButton } from "web3uikit";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ethers } from "ethers";
 
 const Navbar = () => {
   const [pageName, setPageName] = useState("");
   const router = useRouter();
-
-  const [fusionBalance, setFusionBalance] = useState(0);
 
   useEffect(() => {
     const _pageName = router.pathname;
@@ -61,7 +58,6 @@ const Navbar = () => {
           </div>
         )}
       </nav>
-      <hr className="border-secondary" />
     </div>
   );
 };
