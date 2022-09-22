@@ -32,7 +32,6 @@ contract FusionCore {
 
     ///@notice declaring chainlink's price aggregator.
     AggregatorV3Interface internal priceFeed;
-    address public constant baseAssetAddress = 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e;
 
     ///@notice declaring token variables.
     IERC20 public immutable baseAsset;
@@ -41,10 +40,10 @@ contract FusionCore {
     ///@notice initiating tokens
     ///@param _baseAssetAddress address of base asset token
     ///@param _fusionAddress address of $FUSN token
-    constructor(IERC20 _baseAssetAddress, FusionToken _fusionAddress) {
+    constructor(IERC20 _baseAssetAddress, FusionToken _fusionAddress, address _aggregatorAddress) {
         baseAsset = _baseAssetAddress;
         fusionToken = _fusionAddress;
-        priceFeed = AggregatorV3Interface(baseAssetAddress);
+        priceFeed = AggregatorV3Interface(_aggregatorAddress);
     } 
 
     ///@notice checks if the borrow position has passed the liquidation point
