@@ -1,4 +1,6 @@
 import HeroSection from "../components/HeroSection.jsx";
+import CTA from "../components/CTA.jsx";
+
 import { Gradient } from "../components/Gradient.js";
 import { useEffect } from "react";
 
@@ -15,6 +17,11 @@ export default function Home() {
         <HeroSection />
       </div>
       <canvas id="gradient-canvas" data-js-darken-top data-transition-in />
+      <div className="bg-primaryBg sm:px-16 px-6flex justify-center items-center">
+        <div className="xl:max-w-[1280px] w-full">
+          <CTA />
+        </div>
+      </div>
     </div>
   );
 }
