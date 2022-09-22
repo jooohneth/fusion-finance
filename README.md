@@ -1,4 +1,4 @@
-# Fusion Finance / Interface development branch
+# Fusion Finance 
 
 ### Author: [John Nguyen](https://github.com/jooohneth)
 

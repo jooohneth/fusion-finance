@@ -15,6 +15,10 @@ describe("Fusion Core", () => {
   const baseAssetAmount = ethers.utils.parseEther("25000");
   const provider = ethers.provider;
 
+  //Comment the first line and uncomment the second line to test on polygon mainnet
+  const aggregatorAddress = "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e";
+  //const aggregatorAddress = "0xF9680D99D6C9589e2a93a78A04A279e509205945";
+
   //Runs before individual tests. Deploying contracts, minting Base Asset.
   beforeEach(async () => {
     const FusionCore = await ethers.getContractFactory("FusionCore");
@@ -35,11 +39,13 @@ describe("Fusion Core", () => {
     fusionToken = await FusionToken.deploy();
     fusionCore = await FusionCore.deploy(
       mockBaseAsset.address,
-      fusionToken.address
+      fusionToken.address,
+      aggregatorAddress
     );
     mockCore = await MockCore.deploy(
       mockBaseAsset.address,
-      fusionToken.address
+      fusionToken.address,
+      aggregatorAddress
     );
   });
 
