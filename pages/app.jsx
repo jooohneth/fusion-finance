@@ -14,6 +14,7 @@ import DataSection from "../components/DataSection.jsx";
 import ControlSection from "../components/ControlSection.jsx";
 import CollateralSection from "../components/CollateralSection.jsx";
 import PositionSection from "../components/PositionSection.jsx";
+import ErrorSection from "../components/ErrorSection.jsx";
 
 export default function App() {
   const [fusnBalance, setFusnBalance] = useState(0);
@@ -164,21 +165,11 @@ export default function App() {
   }, [isWeb3Enabled, coreAddress, tokenAddress, baseAssetAddress]);
 
   if (!isWeb3Enabled) {
-    return (
-      <div className="flex items-start justify-center w-full min-h-screen font-sans bg-primaryBg">
-        <h1 className="text-3xl font-semibold text-white">Connect Wallet!</h1>
-      </div>
-    );
+    return <ErrorSection x={true} />;
   }
 
   if (!coreAddress) {
-    return (
-      <div className="flex items-start justify-center w-full min-h-screen font-sans bg-primaryBg">
-        <h1 className="text-3xl font-semibold text-white">
-          Please, connect to Goerli Network!
-        </h1>
-      </div>
-    );
+    return <ErrorSection x={false} />;
   }
 
   return (
