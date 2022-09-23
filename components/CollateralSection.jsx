@@ -1,5 +1,6 @@
-import { Fragment, useState, useRef } from "react";
+import { Fragment, useState, useRef, useEffect } from "react";
 import { ethers } from "ethers";
+import { useMoralis } from "react-moralis";
 import Modal from "./Modal.jsx";
 
 import { ToastContainer, toast, Slide } from "react-toastify";
@@ -8,6 +9,8 @@ import "react-toastify/dist/ReactToastify.css";
 const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
   const [showCollateralize, setShowCollateralize] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [chainId, setChainId] = useState("");
+  const { chainId: chainIdHex } = useMoralis();
 
   const collatAmount = useRef(0);
   const withdrawAmount = useRef(0);
@@ -16,6 +19,10 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   const signer = provider.getSigner();
   const coreContract = new ethers.Contract(coreAddress, coreAbi, signer);
+
+  useEffect(() => {
+    setChainId(parseInt(chainIdHex));
+  }, [chainIdHex]);
 
   const pending = () =>
     (toastId.current = toast.info("Transaction Pending...", {
@@ -100,10 +107,15 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
             <tr className="text-sm text-gray-500">
               <td className="py-4">
                 <div className="flex gap-4 items-center">
-                  <span className="font-bold text-md"> Ethereum </span>
+                  <span className="font-bold text-md">
+                    {" "}
+                    {chainId === 5 ? "Ethereum" : "Matic"}{" "}
+                  </span>
                 </div>
               </td>
-              <td className="py-4">{collateralBalance} Ξ</td>
+              <td className="py-4">
+                {collateralBalance} {chainId === 5 && "Ξ"}
+              </td>
               <td className="py-4 flex justify-center">
                 <button
                   className="flex justify-center py-3 mx-1 rounded-full w-12 border-2 border-secondary text-secondary text-sm font-bold"
@@ -127,7 +139,7 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
         onClose={() => setShowCollateralize(false)}
       >
         <div className="p-6 flex items-center justify-center font-semibold text-xl">
-          <div>Collateralize ETH</div>
+          <div>Collateralize {chainId === 5 ? "ETH" : "MATIC"}</div>
         </div>
         <div className="bg-gray-700 my-3 rounded-md px-6 py-4 text-xl flex justify-between">
           <input
@@ -136,7 +148,7 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
             placeholder="0.00"
             ref={collatAmount}
           />
-          <div className="text-white">ETH</div>
+          <div className="text-white">{chainId === 5 ? "ETH" : "MATIC"}</div>
         </div>
         <div className="p-8">
           <button
@@ -149,7 +161,7 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
       </Modal>
       <Modal isVisible={showWithdraw} onClose={() => setShowWithdraw(false)}>
         <div className="p-6 flex items-center justify-center font-semibold text-xl">
-          <div>Withdraw ETH</div>
+          <div>Withdraw {chainId === 5 ? "ETH" : "MATIC"}</div>
         </div>
         <div className="bg-gray-700 my-3 rounded-md px-6 py-4 text-xl flex justify-between">
           <input
@@ -158,7 +170,7 @@ const CollateralSection = ({ collateralBalance, coreAddress, coreAbi }) => {
             placeholder="0.00"
             ref={withdrawAmount}
           />
-          <div className="text-white">ETH</div>
+          <div className="text-white">{chainId === 5 ? "ETH" : "MATIC"}</div>
         </div>
         <div className="p-8">
           <button

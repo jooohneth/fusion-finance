@@ -49,16 +49,16 @@ contract FusionCore {
     ///@notice checks if the borrow position has passed the liquidation point
     ///@dev added 'virtual' identifier for MockCore to override
     modifier passedLiquidation(address _borrower) virtual {
-        uint ethPrice = getEthPrice();
-        require((ethPrice * collateralBalance[_borrower]) <= calculateLiquidationPoint(_borrower), "Position can't be liquidated!");
+        uint collatAssetPrice = getCollatAssetPrice();
+        require((collatAssetPrice * collateralBalance[_borrower]) / 10 ** 8 <= calculateLiquidationPoint(_borrower), "Position can't be liquidated!");
         _;
     }
 
     ///@notice Function to get latest price of ETH in USD
-    ///@return ethPrice price of ETH in USD
-    function getEthPrice() public view returns(uint ethPrice){
+    ///@return collatAssetPrice price of ETH in USD
+    function getCollatAssetPrice() public view returns(uint collatAssetPrice){
         (,int price,,,) = priceFeed.latestRoundData();
-        ethPrice = uint(price) / 10**8;
+        collatAssetPrice = uint(price);
     }
 
     ///@notice calculates amount of time the lender has been lending since the last update.
@@ -81,8 +81,8 @@ contract FusionCore {
     ///@notice calculates the borrow limit depending on the price of ETH and borrow limit rate.
     ///@return limit current borrow limit for user
     function calculateBorrowLimit(address _borrower) public view returns(uint limit) {
-        uint ethPrice = getEthPrice();
-        limit = ((((ethPrice * collateralBalance[_borrower]) / 100) * 70)) - borrowBalance[_borrower];
+        uint collatAssetPrice = getCollatAssetPrice();
+        limit = ((((collatAssetPrice * collateralBalance[_borrower]) / 100) * 70)) / 10 ** 8 - borrowBalance[_borrower];
     }
 
     function calculateLiquidationPoint(address _borrower) public view returns(uint point) {

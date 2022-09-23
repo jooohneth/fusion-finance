@@ -14,7 +14,7 @@ const main = async () => {
     aggregatorAddress = "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e";
   } else if (network.name === "polygon") {
     baseAssetAddress = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
-    aggregatorAddress = "0xF9680D99D6C9589e2a93a78A04A279e509205945";
+    aggregatorAddress = "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0";
   }
 
   console.log(`Base asset address: ${baseAssetAddress}`);

@@ -9,9 +9,9 @@ contract MockCore is FusionCore {
     constructor(IERC20 _baseAssetAddress, FusionToken _fusionAddress, address _aggregatorAddress) FusionCore(_baseAssetAddress, _fusionAddress, _aggregatorAddress){}
 
     ///@notice overriding the passedLiquidation modifier to mock the price of ETH. Let's anyone liquidate any borrow position.
-    ///@dev ethPrice set to 1 to be able to get liquidated
+    ///@dev ethPrice set to 0 to be able to get liquidated
     modifier passedLiquidation(address _borrower) override {
-        uint ethPrice = 1;
+        uint ethPrice = 0;
         require((ethPrice * collateralBalance[_borrower]) <= calculateLiquidationPoint(_borrower), "Position can't be liquidated!");
         _;
     }
