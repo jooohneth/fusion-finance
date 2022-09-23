@@ -17,7 +17,7 @@ describe("Fusion Core", () => {
 
   //Comment the first line and uncomment the second line to test on polygon mainnet
   const aggregatorAddress = "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e";
-  //const aggregatorAddress = "0xF9680D99D6C9589e2a93a78A04A279e509205945";
+  //const aggregatorAddress = "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0";
 
   //Runs before individual tests. Deploying contracts, minting Base Asset.
   beforeEach(async () => {
@@ -262,9 +262,9 @@ describe("Fusion Core", () => {
     });
   });
 
-  //Collateralize ETH funcionality tests
-  describe("Collateralize ETH", async () => {
-    it("should colltaeralize ether", async () => {
+  //Collateralize asset funcionality tests
+  describe("Collateralize asset", async () => {
+    it("should colltaeralize asset", async () => {
       let collatAmount = ethers.utils.parseEther("1");
 
       await fusionCore.connect(bob).collateralize({ value: collatAmount });
@@ -275,7 +275,7 @@ describe("Fusion Core", () => {
       expect(await provider.getBalance(fusionCore.address)).to.eq(collatAmount);
     });
 
-    it("should collateralize ether multiple times", async () => {
+    it("should collateralize asset multiple times", async () => {
       let collatAmount = ethers.utils.parseEther("1");
 
       await fusionCore.connect(alice).collateralize({ value: collatAmount });
@@ -354,11 +354,9 @@ describe("Fusion Core", () => {
   });
 
   describe("Chainlink Price Feed", () => {
-    it("Should be able to successfully get price of ETH", async function () {
-      let ethPrice = await fusionCore.getEthPrice();
-      expect(ethPrice).not.be.null;
-
-      //console.log(`Price of Ether: ${Number(ethPrice)}`);
+    it("Should be able to successfully get price of collateral asset", async function () {
+      let collatAssetPrice = await fusionCore.getCollatAssetPrice();
+      expect(collatAssetPrice).not.be.null;
     });
   });
 
@@ -372,11 +370,11 @@ describe("Fusion Core", () => {
     });
 
     it("should calculate borrow limit", async () => {
-      let rawEthPrice = await fusionCore.getEthPrice();
-      let ethPrice = Number(rawEthPrice);
+      let rawCollatAssetPrice = await fusionCore.getCollatAssetPrice();
+      let collatAssetPrice = Number(rawCollatAssetPrice);
       let rawCollatBalance = await fusionCore.collateralBalance(alice.address);
       let collatBalance = Number(ethers.utils.formatEther(rawCollatBalance));
-      let expectedResult = ethPrice * collatBalance * 0.7;
+      let expectedResult = (collatAssetPrice * collatBalance * 0.7) / 10 ** 8;
 
       let rawResult = await fusionCore.calculateBorrowLimit(alice.address);
       let result = Number(ethers.utils.formatEther(rawResult));
@@ -389,6 +387,7 @@ describe("Fusion Core", () => {
       let rawBorrowLimit = await fusionCore.calculateBorrowLimit(alice.address);
       let borrowLimit = ethers.utils.formatEther(rawBorrowLimit);
       let borrowAmount = ethers.utils.parseEther((borrowLimit / 2).toString());
+
       let beforeBalance = await mockBaseAsset.balanceOf(alice.address);
 
       expect(await fusionCore.connect(alice).borrow(borrowAmount)).to.be.ok;
@@ -403,23 +402,27 @@ describe("Fusion Core", () => {
     });
 
     it("should borrow multiple times", async () => {
-      let firstAmount = ethers.utils.parseEther("500");
-      let secondAmount = ethers.utils.parseEther("300");
+      let rawBorrowLimit = await fusionCore.calculateBorrowLimit(alice.address);
+      let borrowLimit = ethers.utils.formatEther(rawBorrowLimit);
+      let borrowAmount = ethers.utils.parseEther((borrowLimit / 3).toString());
 
-      await fusionCore.connect(alice).borrow(firstAmount);
-      expect(await fusionCore.borrowBalance(alice.address)).to.eq(firstAmount);
+      await fusionCore.connect(alice).borrow(borrowAmount);
+      expect(await fusionCore.borrowBalance(alice.address)).to.eq(borrowAmount);
 
-      await fusionCore.connect(alice).borrow(secondAmount);
+      await fusionCore.connect(alice).borrow(borrowAmount);
       expect(await fusionCore.borrowBalance(alice.address)).to.eq(
-        firstAmount.add(secondAmount)
+        borrowAmount.add(borrowAmount)
       );
     });
 
     it("should deduct borrow fees from collateral", async () => {
+      let rawBorrowLimit = await fusionCore.calculateBorrowLimit(alice.address);
+      let borrowLimit = ethers.utils.formatEther(rawBorrowLimit);
+      let borrowAmount = ethers.utils.parseEther((borrowLimit / 2).toString());
       let beforeBalance = await fusionCore.collateralBalance(alice.address);
       let expectedResult = beforeBalance - beforeBalance * 0.003;
 
-      await fusionCore.connect(alice).borrow(1);
+      await fusionCore.connect(alice).borrow(borrowAmount);
 
       let rawAfterBalance = await fusionCore.collateralBalance(alice.address);
       let afterBalance = Number(rawAfterBalance);
@@ -444,51 +447,54 @@ describe("Fusion Core", () => {
 
   describe("Repay Base Asset", async () => {
     beforeEach(async () => {
-      let collatAmount = ethers.utils.parseEther("1");
-      let borrowAmount = ethers.utils.parseEther("700");
-
       await mockBaseAsset.mint(fusionCore.address, baseAssetAmount);
-      await fusionCore.connect(bob).collateralize({ value: collatAmount });
-      await fusionCore.connect(bob).borrow(borrowAmount);
       await mockBaseAsset
         .connect(bob)
         .approve(fusionCore.address, baseAssetAmount);
+
+      let collatAmount = ethers.utils.parseEther("1");
+      await fusionCore.connect(bob).collateralize({ value: collatAmount });
+
+      let rawBorrowLimit = await fusionCore.calculateBorrowLimit(bob.address);
+      let borrowLimit = ethers.utils.formatEther(rawBorrowLimit);
+      let borrowAmount = ethers.utils.parseEther((borrowLimit / 2).toString());
+
+      await fusionCore.connect(bob).borrow(borrowAmount);
     });
 
     it("should repay amount", async () => {
-      let repayAmount = ethers.utils.parseEther("500");
+      let borrowBalance = await fusionCore.borrowBalance(bob.address);
+      let repayAmount = borrowBalance.div(2);
       let beforeBalance = await mockBaseAsset.balanceOf(fusionCore.address);
 
       expect(await fusionCore.connect(bob).repay(repayAmount)).to.be.ok;
 
       expect(await fusionCore.isBorrowing(bob.address)).to.eq(true);
-      expect(await fusionCore.borrowBalance(bob.address)).to.eq(
-        ethers.utils.parseEther("200")
-      );
+      expect(await fusionCore.borrowBalance(bob.address)).to.eq(repayAmount);
 
       let afterBalance = await mockBaseAsset.balanceOf(fusionCore.address);
       expect(afterBalance).to.eq(beforeBalance.add(repayAmount));
     });
 
     it("should repay multiple times", async () => {
-      let firstAmount = ethers.utils.parseEther("200");
-      let secondAmount = ethers.utils.parseEther("300");
+      let borrowBalance = await fusionCore.borrowBalance(bob.address);
+      let repayAmount = borrowBalance.div(3);
 
-      await fusionCore.connect(bob).repay(firstAmount);
+      await fusionCore.connect(bob).repay(repayAmount);
       expect(await fusionCore.borrowBalance(bob.address)).to.eq(
-        ethers.utils.parseEther("500")
+        borrowBalance.sub(repayAmount)
       );
 
-      await fusionCore.connect(bob).repay(secondAmount);
+      await fusionCore.connect(bob).repay(repayAmount);
       expect(await fusionCore.borrowBalance(bob.address)).to.eq(
-        ethers.utils.parseEther("200")
+        borrowBalance.sub(repayAmount.mul(2))
       );
     });
 
     it("shoud repay full amount", async () => {
-      let repayAmount = ethers.utils.parseEther("700");
+      let borrowBalance = await fusionCore.borrowBalance(bob.address);
 
-      await fusionCore.connect(bob).repay(repayAmount);
+      await fusionCore.connect(bob).repay(borrowBalance);
 
       expect(await fusionCore.isBorrowing(bob.address)).to.eq(false);
       expect(await fusionCore.borrowBalance(bob.address)).to.eq(0);
@@ -521,7 +527,9 @@ describe("Fusion Core", () => {
   describe("Liquidate", async () => {
     beforeEach(async () => {
       let collatAmount = ethers.utils.parseEther("1");
-      let borrowAmount = ethers.utils.parseEther("700");
+      let rawBorrowLimit = await fusionCore.calculateBorrowLimit(alice.address);
+      let borrowLimit = ethers.utils.formatEther(rawBorrowLimit);
+      let borrowAmount = ethers.utils.parseEther((borrowLimit / 2).toString());
 
       await mockBaseAsset.mint(fusionCore.address, baseAssetAmount);
       await mockBaseAsset.mint(mockCore.address, baseAssetAmount);
