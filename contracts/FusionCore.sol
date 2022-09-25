@@ -74,24 +74,23 @@ contract FusionCore {
     ///@return yield amount of $FUSN tokens earned by lender
     function calculateYieldTotal(address _lender) public view returns(uint yield) {
         uint timeStaked = calculateYieldTime(_lender) * 10**18;
-        uint rate = timeStaked / 31536000; 
-        yield = (lendingBalance[_lender] * rate) / 10**18;
+        yield = (lendingBalance[_lender] * timeStaked / 31536000) / 10**18;
     }
 
     ///@notice calculates the borrow limit depending on the price of ETH and borrow limit rate.
     ///@return limit current borrow limit for user
     function calculateBorrowLimit(address _borrower) public view returns(uint limit) {
         uint collatAssetPrice = getCollatAssetPrice();
-        limit = ((((collatAssetPrice * collateralBalance[_borrower]) / 100) * 70)) / 10 ** 8 - borrowBalance[_borrower];
+        limit = ((((collatAssetPrice * collateralBalance[_borrower]) * 70) / 100)) / 10 ** 8 - borrowBalance[_borrower];
     }
 
     function calculateLiquidationPoint(address _borrower) public view returns(uint point) {
-        point = borrowBalance[_borrower] + ((borrowBalance[_borrower] / 100) * 10);
+        point = borrowBalance[_borrower] + (borrowBalance[_borrower] * 10) / 100;
     }
 
     ///@notice lends base asset.
     ///@param _amount amount of tokens to lend
-    function lend(uint _amount) public {
+    function lend(uint _amount) external {
         require(_amount > 0, "Can't lend amount: 0!");
         require(baseAsset.balanceOf(msg.sender) >= _amount, "Insufficient balance!");
 
@@ -116,23 +115,24 @@ contract FusionCore {
         require(lendingBalance[msg.sender] >= _amount, "Insufficient lending balance!");
 
         uint yield = calculateYieldTotal(msg.sender);
+        fusionBalance[msg.sender] += yield;
         startTime[msg.sender] = block.timestamp;
+
         uint withdrawAmount = _amount;
         _amount = 0;
         lendingBalance[msg.sender] -= withdrawAmount;
-
-        require(baseAsset.transfer(msg.sender, withdrawAmount), "Transaction failed!");
-        fusionBalance[msg.sender] += yield;
 
         if(lendingBalance[msg.sender] == 0){
             isLending[msg.sender] = false;
         }
 
+        require(baseAsset.transfer(msg.sender, withdrawAmount), "Transaction failed!");
+
         emit WithdrawLend(msg.sender, withdrawAmount);
     }
     
     ///@notice claims all yield earned by lender.
-    function claimYield() public {
+    function claimYield() external {
         uint yield = calculateYieldTotal(msg.sender);
 
         require(yield > 0 || fusionBalance[msg.sender] > 0, "No, $FUSN tokens earned!");
@@ -150,7 +150,7 @@ contract FusionCore {
     }
 
     ///@notice collateralizes user's ETH and sets borrow limit
-    function collateralize() public payable {
+    function collateralize() external payable {
         require(msg.value > 0, "Can't collaterlize ETH amount: 0!");
 
         collateralBalance[msg.sender] += msg.value;
@@ -160,7 +160,7 @@ contract FusionCore {
 
     ///@notice withdraw user's collateral ETH and recalculates the borrow limit
     ///@param _amount amount of ETH the user wants to withdraw
-    function withdrawCollateral(uint _amount) public {
+    function withdrawCollateral(uint _amount) external {
         require(collateralBalance[msg.sender] >= _amount, "Not enough collateral to withdraw!");
         require(!isBorrowing[msg.sender], "Can't withdraw collateral while borrowing!");
 
@@ -175,8 +175,8 @@ contract FusionCore {
     ///@notice borrows base asset
     ///@param _amount amount of base asset to borrow
     ///@dev deducting 0.3% from msg.sender's ETH collateral as protocol's fees
-    function borrow(uint _amount) public {
-        collateralBalance[msg.sender] -= (collateralBalance[msg.sender] / 1000) * 3;
+    function borrow(uint _amount) external {
+        collateralBalance[msg.sender] -= (collateralBalance[msg.sender] * 3) / 1000;
 
         require(collateralBalance[msg.sender] > 0, "No ETH collateralized!");
         require(calculateBorrowLimit(msg.sender) >= _amount, "Borrow amount exceeds borrow limit!");
@@ -191,7 +191,7 @@ contract FusionCore {
     
     ///@notice repays base asset debt
     ///@param _amount amount of base asset to repay
-    function repay(uint _amount) public {
+    function repay(uint _amount) external {
         require(isBorrowing[msg.sender], "Can't repay before borrowing!");
         require(baseAsset.balanceOf(msg.sender) >= _amount, "Insufficient funds!");
         require(_amount > 0 && _amount <= borrowBalance[msg.sender], "Can't repay amount: 0 or more than amount borrowed!");
@@ -211,10 +211,11 @@ contract FusionCore {
     ///@param _borrower address of borrower
     ///@dev passedLiquidation modifier checks if the borrow position has passed liquidation point
     ///@dev liquidationReward 1.25% of borrower's ETH collateral
-    function liquidate(address _borrower) public passedLiquidation(_borrower) {
+    function liquidate(address _borrower) external passedLiquidation(_borrower) {
         require(isBorrowing[_borrower], "This address is not borrowing!");
+        require(msg.sender != _borrower, "Can't liquidated your own position!");    
 
-        uint liquidationReward = (collateralBalance[_borrower] / 10000) * 125; 
+        uint liquidationReward = (collateralBalance[_borrower] * 125) / 10000; 
 
         collateralBalance[_borrower] = 0;
         borrowBalance[_borrower] = 0;
