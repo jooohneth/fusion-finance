@@ -26,7 +26,7 @@ describe("Fusion Core", () => {
     const MockBaseAsset = await ethers.getContractFactory("MockERC20");
     const MockCore = await ethers.getContractFactory("MockCore");
 
-    mockBaseAsset = await MockBaseAsset.deploy("Mock Base Asset", "MOCK");
+    mockBaseAsset = await MockBaseAsset.deploy();
 
     [owner, bob, alice] = await ethers.getSigners();
 
