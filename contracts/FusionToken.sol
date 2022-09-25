@@ -13,7 +13,7 @@ contract FusionToken is ERC20, Ownable {
     ///@notice wrapper for the _mint function, so that only the owner of the contract can mint tokens
     ///@param _to address of the user to mint
     ///@param _amount amount of $FUSN tokens to mint
-    function mint(address _to, uint _amount) public onlyOwner {
+    function mint(address _to, uint _amount) external onlyOwner {
         _mint(_to, _amount);
     }
 
