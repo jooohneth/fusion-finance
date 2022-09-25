@@ -6,7 +6,7 @@ const main = async () => {
 
   if (network.name === "hardhat") {
     const MockERC20 = await ethers.getContractFactory("MockERC20");
-    let baseAsset = await MockERC20.deploy("Mock Asset", "MOCK");
+    let baseAsset = await MockERC20.deploy();
     baseAssetAddress = baseAsset.address;
     aggregatorAddress = "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e";
   } else if (network.name === "goerli") {

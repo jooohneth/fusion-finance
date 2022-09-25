@@ -6,12 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 ///@notice Mock of Base Asset ERC20 contract
 contract MockERC20 is ERC20 {
 
-    constructor(
-        string memory name,
-        string memory ticker
-    ) ERC20(name, ticker) {}
+    constructor() ERC20("Mock Base Asset", "MOCK") {}
 
-    function mint(address to, uint256 amount) public {
+    function mint(address to, uint256 amount) external {
         _mint(to, amount);
     }
 }
