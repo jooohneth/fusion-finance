@@ -1,6 +1,6 @@
 # Fusion Finance
 
-### Author: [John Nguyen](https://github.com/jooohneth)
+### Author: [John Nguyen] (https://github.com/jooohneth)
 
 ## Tokens Information
 
